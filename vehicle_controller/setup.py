@@ -44,7 +44,7 @@ setup(
             'yolo_test_06 = test_nodes.yolo_test_06_yolo_slow:main',
             'yolo_test_07 = test_nodes.yolo_test_07_bezier:main',
             'yolo_test_08 = test_nodes.yolo_test_08_bezier_apriltag_gimbal:main',
-            'yolo_test_09 = test_nodes.yolo_test_09_mission_apriltag_gimbal:main',
+            'yolo_test_09 = test_nodes.yolo_test_09:main',
             'fw_test_01 = test_nodes.fw_test_01_waypoints:main',
             'fw_test_02 = test_nodes.fw_test_02_pturn:main',
             'mode_test_00 = test_nodes.mode_test_00:main',

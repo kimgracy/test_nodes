@@ -149,7 +149,7 @@ class VehicleController(Node):
 
         # Gimbal
         self.time_checker = 0
-        # self.ser = serial.Serial('/dev/ttyGimbal', 115200)        ######################################################################################
+        self.ser = serial.Serial('/dev/ttyGimbal', 115200)        ######################################################################################
         self.gimbal_pitch = 0.0
         self.gimbal_counter = 0
         self.pitch_index = 0
@@ -294,7 +294,7 @@ class VehicleController(Node):
         data_var = to_twos_complement(10 * int(self.gimbal_pitch))
         data_crc = crc_xmodem(data_fix + data_var)
         packet = bytearray(data_fix + data_var + data_crc)
-        # self.ser.write(packet)      ######################################################################################
+        self.ser.write(packet)      ######################################################################################
 
     def main_timer_callback(self):
         if self.phase == -1:

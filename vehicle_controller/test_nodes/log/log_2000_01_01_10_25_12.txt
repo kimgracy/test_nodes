@@ -1,0 +1,12 @@
+2000-01-01 10:29:57,704 - 
+<< yolo_test_09_bezier >>
+
+
+2000-01-01 10:29:57,705 - Mission mode requested
+
+2000-01-01 10:30:14,786 - WP7 reached
+2000-01-01 10:30:14,786 - Offboard control mode requested
+
+2000-01-01 10:30:14,837 - WP7 reached
+2000-01-01 10:30:14,837 - Offboard control mode requested
+

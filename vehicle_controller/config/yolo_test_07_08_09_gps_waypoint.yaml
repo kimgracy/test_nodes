@@ -1,6 +1,6 @@
 vehicle_controller: # Name of node
   ros__parameters: # ROS parameters
-    vmax: 5.0
+    vmax: 3.5
     angle: 10.0
     # WP: [latitude, longitude, relative altitude]
     # 37.465194. 126.950070
