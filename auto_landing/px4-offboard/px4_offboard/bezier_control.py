@@ -132,7 +132,7 @@ class points():
             point3 = self.xf - self.vf*t/3
             point4 = self.xf
             # point2 = (self.xi + self.xf * 2)/3
-            point2 = self.xi + (self.vi + 0.05 * self.vi / np.linalg.norm(self.vi))*t/3  
+            point2 = self.xi + (self.vi + 0.05 * (np.array([self.xf[0]-self.xi[0],self.xf[1]-self.xi[1],0])) / np.linalg.norm(np.array([self.xf[0]-self.xi[0],self.xf[1]-self.xi[1],0])))*t/3  
             flag = 1
         calibrated = ([t,point1,point2,point3,point4])
         return calibrated
@@ -238,6 +238,9 @@ class BezierControl(Node):
         self.R = np.array([[np.cos(self.yaw_start), -np.sin(self.yaw_start), 0],
                             [np.sin(self.yaw_start), np.cos(self.yaw_start), 0],
                             [0, 0, 1]])
+        self.print(f"self.yaw: {self.yaw_start}")
+        self.print(f"self.home: {self.home_position}")
+        self.print(f"shift: {np.dot(self.R, self.vehicle_length)}")
 
     def point_command_callback(self, msg):
         self.xf = np.asfarray(msg.data[0:3]) + np.dot(self.R, self.vehicle_length)
@@ -349,7 +352,7 @@ class BezierControl(Node):
                     if self.delta_t_goal + int(1/self.timer_period) >= self.count_goal-1:
                         self.delta_t_goal = 0
 
-                    if np.linalg.norm(self.vehicle_position[0]-self.xf_goal[0]) < 1.2 and np.linalg.norm(self.vehicle_position[1]-self.xf_goal[1]) < 1.2 and self.vehicle_position[2]-self.xf_goal[2] > 0.5:
+                    if np.linalg.norm(self.vehicle_position[0]-self.xf_goal[0]) < 1.2 and np.linalg.norm(self.vehicle_position[1]-self.xf_goal[1]) < 1.2 and self.vehicle_position[2]-self.xf_goal[2] > -0.5:
                         self.land()
 
                 elif self.delta_t == -1 and self.count_goal <= int(1/self.timer_period):
@@ -363,10 +366,10 @@ class BezierControl(Node):
                     self.publisher_trajectory.publish(trajectory_msg)
                     self.print(f"edge case no bezier - delta_t_goal : {self.delta_t_goal},   xf_goal : {self.xf_goal},   vehicle_position : {self.vehicle_position}")
 
-                    if np.linalg.norm(self.vehicle_position[0]-self.xf_goal[0]) < 1.2 and np.linalg.norm(self.vehicle_position[1]-self.xf_goal[1]) < 1.2 and self.vehicle_position[2]-self.xf_goal[2] > 0.5:
+                    if np.linalg.norm(self.vehicle_position[0]-self.xf_goal[0]) < 1.2 and np.linalg.norm(self.vehicle_position[1]-self.xf_goal[1]) < 1.2 and self.vehicle_position[2]-self.xf_goal[2] > -0.5:
                         self.land()  
 
-                elif self.delta_t + int(1/self.timer_period) < self.count-1 and np.linalg.norm(self.vehicle_position[2]-self.xf[2]) > 0.5 and self.detect:   # if receiving command from the bezier curve
+                elif self.delta_t + int(1/self.timer_period) < self.count-1 and np.linalg.norm(self.vehicle_position[2]-self.xf[2]) > 0.7 and self.detect:   # if receiving command from the bezier curve
                     trajectory_msg.position[0] = self.x[self.delta_t + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[1] = self.y[self.delta_t + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[2] = self.z[self.delta_t + int(1/self.timer_period)]#np.nan
@@ -379,7 +382,7 @@ class BezierControl(Node):
                     self.publisher_trajectory.publish(trajectory_msg)
                     self.print(f"apriltag bezier - count : {self.count},   delta_t : {self.delta_t},   xf : {self.xf},   vehicle_position : {self.vehicle_position}")
 
-                    if np.linalg.norm(self.vehicle_position[0]-self.xf[0]) < 1.2 and np.linalg.norm(self.vehicle_position[1]-self.xf[1]) < 1.2 and (self.vehicle_position[2]-self.xf[2] > 0.2 or self.vehicle_position[2]-self.xf_goal[2] > 0.5):
+                    if np.linalg.norm(self.vehicle_position[0]-self.xf[0]) < 1.2 and np.linalg.norm(self.vehicle_position[1]-self.xf[1]) < 1.2 and (self.vehicle_position[2]-self.xf[2] > -0.1 or self.vehicle_position[2]-self.xf_goal[2] > -0.5):
                         self.land()
 
                 elif self.delta_t + int(1/self.timer_period) >= self.count-1 :
@@ -392,7 +395,7 @@ class BezierControl(Node):
                     trajectory_msg.yaw = self.yaw_start
                     self.publisher_trajectory.publish(trajectory_msg)
 
-                    if np.linalg.norm(self.vehicle_position[0]-self.xf[0]) < 1.2 and np.linalg.norm(self.vehicle_position[1]-self.xf[1]) < 1.2 and (self.vehicle_position[2]-self.xf[2] > 0.2 or self.vehicle_position[2]-self.xf_goal[2] > 0.5):
+                    if np.linalg.norm(self.vehicle_position[0]-self.xf[0]) < 1.2 and np.linalg.norm(self.vehicle_position[1]-self.xf[1]) < 1.2 and (self.vehicle_position[2]-self.xf[2] > -0.1 or self.vehicle_position[2]-self.xf_goal[2] > -0.5):
                         self.land()
 
                     self.print(f"apriltag no bezier - xf : {self.xf},   vehicle_position : {self.vehicle_position}")
