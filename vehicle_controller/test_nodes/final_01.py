@@ -56,7 +56,7 @@ class VehicleController(Node):
         # acceptance constants
         self.mc_acceptance_radius = 0.3
         self.nearby_acceptance_radius = 30
-        self.offboard_acceptance_radius = 2.0                   # mission -> offboard acceptance radius
+        self.offboard_acceptance_radius = 10.0                   # mission -> offboard acceptance radius
         self.heading_acceptance_angle = 0.1                     # 0.1 rad = 5.73 deg
 
         # bezier curve constants

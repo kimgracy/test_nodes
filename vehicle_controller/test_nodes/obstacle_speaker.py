@@ -16,7 +16,7 @@ class ObstacleSpeaker(Node):
             depth=1
         )
 
-        self.declare_parameter('x', 290.0)
+        self.declare_parameter('x', 200.0)
         self.declare_parameter('y', 220.0)
 
         self.publisher_ = self.create_publisher(YoloObstacle, '/yolo_obstacle', qos_profile)

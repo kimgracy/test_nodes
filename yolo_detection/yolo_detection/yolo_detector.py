@@ -38,10 +38,11 @@ class YoloDetector(Node):
 
         # define model path and load the model
         if is_jetson():
-            model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small.engine')
+            model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small_50.engine')
+            # model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small_50.pt')
         else:
             print('Not run on Nvidia Jetson. use best_small.pt')
-            model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small.pt')            
+            model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small_50.pt')            
         self.model = torch.hub.load(os.path.expanduser('~/yolov5'), 'custom', path=model_path, source='local')
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
@@ -57,14 +58,15 @@ class YoloDetector(Node):
 
         # variables
         self.y_threshold = 280
-        self.monitor_size = tuple(np.array([640,480]) * 2)
+        self.monitor_size = tuple(np.array([1280,720]) * 1)
+        self.yolo_size = tuple([640,480])
         
         # create target_capture folder, which is used to save target images
         self.target_capture_folder = os.path.join(os.getcwd(), 'src/yolo_detection/config/target_capture')
         os.makedirs(self.target_capture_folder, exist_ok=True)
         
         # timer for publishing target image
-        self.timer_period = 1.0  # seconds
+        self.timer_period = 0.2  # seconds
         self.last_capture_time = time.time()
 
         # create cv_bridge instance
@@ -82,9 +84,10 @@ class YoloDetector(Node):
     def image_callback(self, msg):
         # convert ROS Image message to OpenCV image
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        frame_resized = cv2.resize(frame, self.yolo_size)
         
         # send frame to YOLOv5 model
-        results = self.model(frame)
+        results = self.model(frame_resized)
 
         # extract bounding box, labels
         labels, cords = results.xyxyn[0][:, -1], results.xyxyn[0][:, :-1]
@@ -107,9 +110,9 @@ class YoloDetector(Node):
                 # if ((abs(y1-y2) >= self.y_threshold) and (label == 'ladder-truck' or label == 'class4')):
                 if ((label == 'ladder-truck' or label == 'class4')):
                     # draw bounding box and label
-                    label = 'ladder-truck'
+                    label = 'ladder'
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(frame, f'{label} {row[4]:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                    cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
                     
                     # publish obstacle message when phase is 8
                     if (self.phase == '8'):
@@ -120,7 +123,6 @@ class YoloDetector(Node):
                         self.publisher_obstacle.publish(obstacle_msg)
                         self.publish_target_image(frame)
                         
-
         # check if it's time to save target image
         if (self.phase == '3'):
             current_time = time.time()
