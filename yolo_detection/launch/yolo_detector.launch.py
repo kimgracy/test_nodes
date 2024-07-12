@@ -19,10 +19,6 @@ def generate_launch_description():
 
     )
 
-    rqt_graph = launch_ros.actions.Node(
-        package="rqt_graph", executable="rqt_graph",
-    )
-
     return launch.LaunchDescription([
         webcam,
         yolo_detector,

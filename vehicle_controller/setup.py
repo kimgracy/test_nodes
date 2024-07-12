@@ -20,9 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'test_00 = test_nodes.test_00_arm:main',
-            'test_01 = test_nodes.test_01_takeoff_and_land:main',
-            'test_02 = test_nodes.test_02_mc_square:main',
+            'mc_test_00 = test_nodes.mc_test_00_arm:main',
+            'mc_test_01 = test_nodes.mc_test_01_takeoff_and_land:main',
+            'mc_test_02 = test_nodes.mc_test_02_mc_square:main',
         ],
     },
 )
