@@ -204,7 +204,7 @@ source ./install/local_setup.bash
    git push origin main
    ```
 
-5. 본인 repo에 들어가서 commit이 제대로 됐는지 클릭해서 확인하고 Compare & Pull reqeust 버튼을 클릭한다. 본인이 어떤 코드를 작성했는지 **자세하게** 설명하고 reviewer에 okj001010을 추가 후, Create pull request 버튼을 클릭한다.
+5. 본인 repo에 들어가서 commit이 제대로 됐는지 확인한다. Pull requests에 들어가서 New pull request를 클릭한다. 본인이 어떤 코드를 작성했는지 **자세하게** 설명하고 reviewer에 okj001010을 추가 후, Create pull request 버튼을 클릭한다.
 
 6. 여기까지 한 이후에는 코드 확인 후 직접 merge 할 예정이니, (아마 안 되긴 할텐데) **절대** 바로 merge 버튼을 누르지 말아야 한다.
 
