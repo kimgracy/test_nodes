@@ -52,7 +52,7 @@ class YoloDetector(Node):
         os.makedirs(self.target_capture_folder, exist_ok=True)
         
         # timer for publishing target image
-        self.timer_period = 1.0  # seconds
+        self.timer_period = 20.0  # seconds
         self.last_capture_time = time.time()
         
         # create a subscriber for the v4l2 image topic
