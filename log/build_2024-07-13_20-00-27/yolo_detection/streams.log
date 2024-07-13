@@ -1,0 +1,45 @@
+[0.510s] Invoking command in '/home/gracekim/workspace/test_ws/build/yolo_detection': CMAKE_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg:/home/gracekim/workspace/test_ws/install/px4_msgs LD_LIBRARY_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib:/home/gracekim/workspace/test_ws/install/px4_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/foxy/opt/yaml_cpp_vendor/lib:/opt/ros/foxy/opt/rviz_ogre_vendor/lib:/opt/ros/foxy/lib/x86_64-linux-gnu:/opt/ros/foxy/lib PYTHONPATH=/home/gracekim/workspace/test_ws/build/yolo_detection/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/yolo_detection:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/test_nodes:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages:/opt/ros/foxy/lib/python3.8/site-packages /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/yolo_detection/build --no-deps symlink_data
+[0.592s] /home/gracekim/.local/lib/python3.8/site-packages/setuptools/dist.py:476: SetuptoolsDeprecationWarning: Invalid dash-separated options
+[0.592s] !!
+[0.592s] 
+[0.592s]         ********************************************************************************
+[0.592s]         Usage of dash-separated 'script-dir' will not be supported in future
+[0.592s]         versions. Please use the underscore name 'script_dir' instead.
+[0.592s] 
+[0.592s]         By 2024-Sep-26, you need to update your project and remove deprecated calls
+[0.592s]         or your builds will no longer be supported.
+[0.592s] 
+[0.592s]         See https://setuptools.pypa.io/en/latest/userguide/declarative_config.html for details.
+[0.593s]         ********************************************************************************
+[0.593s] 
+[0.593s] !!
+[0.593s]   opt = self.warn_dash_deprecation(opt, section)
+[0.713s] running develop
+[0.713s] /home/gracekim/.local/lib/python3.8/site-packages/setuptools/command/develop.py:42: EasyInstallDeprecationWarning: easy_install command is deprecated.
+[0.713s] !!
+[0.713s] 
+[0.713s]         ********************************************************************************
+[0.713s]         Please avoid running ``setup.py`` and ``easy_install``.
+[0.713s]         Instead, use pypa/build, pypa/installer or other
+[0.713s]         standards-based tools.
+[0.713s] 
+[0.713s]         See https://github.com/pypa/setuptools/issues/917 for details.
+[0.713s]         ********************************************************************************
+[0.714s] 
+[0.714s] !!
+[0.714s]   easy_install.initialize_options(self)
+[0.839s] running egg_info
+[0.849s] writing yolo_detection.egg-info/PKG-INFO
+[0.849s] writing dependency_links to yolo_detection.egg-info/dependency_links.txt
+[0.849s] writing entry points to yolo_detection.egg-info/entry_points.txt
+[0.849s] writing requirements to yolo_detection.egg-info/requires.txt
+[0.850s] writing top-level names to yolo_detection.egg-info/top_level.txt
+[0.871s] reading manifest file 'yolo_detection.egg-info/SOURCES.txt'
+[0.871s] writing manifest file 'yolo_detection.egg-info/SOURCES.txt'
+[0.911s] running build_ext
+[0.911s] Creating /home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages/yolo-detection.egg-link (link to .)
+[0.912s] Installing yolo_detector script to /home/gracekim/workspace/test_ws/install/yolo_detection/lib/yolo_detection
+[0.912s] 
+[0.912s] Installed /home/gracekim/workspace/test_ws/build/yolo_detection
+[0.912s] running symlink_data
+[0.933s] Invoked command in '/home/gracekim/workspace/test_ws/build/yolo_detection' returned '0': CMAKE_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg:/home/gracekim/workspace/test_ws/install/px4_msgs LD_LIBRARY_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib:/home/gracekim/workspace/test_ws/install/px4_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/foxy/opt/yaml_cpp_vendor/lib:/opt/ros/foxy/opt/rviz_ogre_vendor/lib:/opt/ros/foxy/lib/x86_64-linux-gnu:/opt/ros/foxy/lib PYTHONPATH=/home/gracekim/workspace/test_ws/build/yolo_detection/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/yolo_detection:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/test_nodes:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages:/opt/ros/foxy/lib/python3.8/site-packages /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/yolo_detection/build --no-deps symlink_data

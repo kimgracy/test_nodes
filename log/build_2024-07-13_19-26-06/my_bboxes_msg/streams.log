@@ -1,0 +1,124 @@
+[0.036s] Invoking command in '/home/gracekim/workspace/test_ws/build/my_bboxes_msg': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --build /home/gracekim/workspace/test_ws/build/my_bboxes_msg -- -j16 -l16
+[0.085s] [  2%] Built target my_bboxes_msg__cpp
+[0.101s] [ 12%] Built target my_bboxes_msg__rosidl_generator_c
+[0.251s] [ 23%] Built target my_bboxes_msg__rosidl_typesupport_introspection_cpp
+[0.336s] [ 34%] Built target my_bboxes_msg__rosidl_typesupport_c
+[0.422s] [ 44%] Built target my_bboxes_msg__rosidl_typesupport_introspection_c
+[0.565s] [ 55%] Built target my_bboxes_msg__rosidl_typesupport_fastrtps_cpp
+[0.634s] [ 65%] Built target my_bboxes_msg__rosidl_typesupport_cpp
+[0.729s] [ 76%] Built target my_bboxes_msg__rosidl_typesupport_fastrtps_c
+[0.775s] [ 76%] Built target my_bboxes_msg
+[0.796s] [ 78%] Built target my_bboxes_msg__py
+[0.877s] [ 87%] Built target my_bboxes_msg__python
+[0.992s] [ 91%] Built target my_bboxes_msg__rosidl_typesupport_fastrtps_c__pyext
+[1.060s] [ 95%] Built target my_bboxes_msg__rosidl_typesupport_c__pyext
+[1.073s] [100%] Built target my_bboxes_msg__rosidl_typesupport_introspection_c__pyext
+[1.088s] Invoked command in '/home/gracekim/workspace/test_ws/build/my_bboxes_msg' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --build /home/gracekim/workspace/test_ws/build/my_bboxes_msg -- -j16 -l16
+[1.279s] Invoking command in '/home/gracekim/workspace/test_ws/build/my_bboxes_msg': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --install /home/gracekim/workspace/test_ws/build/my_bboxes_msg
+[1.287s] -- Install configuration: ""
+[1.287s] -- Execute custom install script
+[1.288s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/ament_index/resource_index/rosidl_interfaces/my_bboxes_msg
+[1.289s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/vehicle_phase__functions.h
+[1.289s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/vehicle_phase__struct.h
+[1.289s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/vehicle_phase__type_support.h
+[1.289s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_obstacle__functions.h
+[1.289s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_obstacle__struct.h
+[1.289s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_obstacle__type_support.h
+[1.289s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_target__functions.h
+[1.289s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_target__struct.h
+[1.289s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_target__type_support.h
+[1.290s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/rosidl_generator_c__visibility_control.h
+[1.290s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/vehicle_phase.h
+[1.290s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/yolo_obstacle.h
+[1.290s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/yolo_target.h
+[1.291s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/environment/library_path.sh
+[1.291s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/environment/library_path.dsv
+[1.291s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/vehicle_phase__rosidl_typesupport_fastrtps_c.h
+[1.296s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_obstacle__rosidl_typesupport_fastrtps_c.h
+[1.296s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_target__rosidl_typesupport_fastrtps_c.h
+[1.297s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[1.297s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/libmy_bboxes_msg__rosidl_typesupport_fastrtps_c.so
+[1.298s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/vehicle_phase__rosidl_typesupport_fastrtps_cpp.hpp
+[1.299s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_obstacle__rosidl_typesupport_fastrtps_cpp.hpp
+[1.309s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_target__rosidl_typesupport_fastrtps_cpp.hpp
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/libmy_bboxes_msg__rosidl_typesupport_fastrtps_cpp.so
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/vehicle_phase__rosidl_typesupport_introspection_c.h
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_obstacle__rosidl_typesupport_introspection_c.h
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_target__rosidl_typesupport_introspection_c.h
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/vehicle_phase__builder.hpp
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/vehicle_phase__struct.hpp
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/vehicle_phase__traits.hpp
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/vehicle_phase__type_support.hpp
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_obstacle__builder.hpp
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_obstacle__struct.hpp
+[1.344s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_obstacle__traits.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_obstacle__type_support.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_target__builder.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_target__struct.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_target__traits.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_target__type_support.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/rosidl_generator_cpp__visibility_control.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/vehicle_phase.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/yolo_obstacle.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/yolo_target.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/vehicle_phase__rosidl_typesupport_introspection_cpp.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_obstacle__rosidl_typesupport_introspection_cpp.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/include/my_bboxes_msg/msg/detail/yolo_target__rosidl_typesupport_introspection_cpp.hpp
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/environment/pythonpath.sh
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/environment/pythonpath.dsv
+[1.345s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages/my_bboxes_msg/__init__.py
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages/my_bboxes_msg/msg/__init__.py
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages/my_bboxes_msg/msg/_vehicle_phase.py
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages/my_bboxes_msg/msg/_yolo_obstacle.py
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages/my_bboxes_msg/msg/_yolo_target.py
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages/my_bboxes_msg/my_bboxes_msg_s__rosidl_typesupport_fastrtps_c.cpython-38-x86_64-linux-gnu.so
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages/my_bboxes_msg/my_bboxes_msg_s__rosidl_typesupport_introspection_c.cpython-38-x86_64-linux-gnu.so
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages/my_bboxes_msg/my_bboxes_msg_s__rosidl_typesupport_c.cpython-38-x86_64-linux-gnu.so
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/libmy_bboxes_msg__python.so
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/msg/YoloObstacle.idl
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/msg/YoloTarget.idl
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/msg/VehiclePhase.idl
+[1.346s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/msg/YoloObstacle.msg
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/msg/YoloTarget.msg
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/msg/VehiclePhase.msg
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/ament_index/resource_index/package_run_dependencies/my_bboxes_msg
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/ament_index/resource_index/parent_prefix_path/my_bboxes_msg
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/environment/ament_prefix_path.sh
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/environment/ament_prefix_path.dsv
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/environment/path.sh
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/environment/path.dsv
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/local_setup.bash
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/local_setup.sh
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/local_setup.zsh
+[1.347s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/local_setup.dsv
+[1.348s] -- Symlinking: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.dsv
+[1.348s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/ament_index/resource_index/packages/my_bboxes_msg
+[1.348s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/rosidl_cmake-extras.cmake
+[1.348s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/ament_cmake_export_dependencies-extras.cmake
+[1.348s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/ament_cmake_export_libraries-extras.cmake
+[1.348s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/ament_cmake_export_targets-extras.cmake
+[1.348s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/ament_cmake_export_include_directories-extras.cmake
+[1.348s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[1.348s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[1.348s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msgConfig.cmake
+[1.348s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msgConfig-version.cmake
+[1.348s] -- Up-to-date symlink: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.xml
+[1.348s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/libmy_bboxes_msg__rosidl_generator_c.so
+[1.348s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/libmy_bboxes_msg__rosidl_typesupport_introspection_c.so
+[1.348s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/libmy_bboxes_msg__rosidl_typesupport_c.so
+[1.349s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/libmy_bboxes_msg__rosidl_typesupport_introspection_cpp.so
+[1.349s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/libmy_bboxes_msg__rosidl_typesupport_cpp.so
+[1.374s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msg__rosidl_generator_cExport.cmake
+[1.374s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msg__rosidl_generator_cExport-noconfig.cmake
+[1.374s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msg__rosidl_typesupport_introspection_cExport.cmake
+[1.374s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msg__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[1.375s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msg__rosidl_typesupport_cExport.cmake
+[1.375s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msg__rosidl_typesupport_cExport-noconfig.cmake
+[1.375s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msg__rosidl_generator_cppExport.cmake
+[1.375s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msg__rosidl_typesupport_introspection_cppExport.cmake
+[1.375s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msg__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[1.376s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msg__rosidl_typesupport_cppExport.cmake
+[1.376s] -- Up-to-date: /home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/cmake/my_bboxes_msg__rosidl_typesupport_cppExport-noconfig.cmake
+[1.401s] Invoked command in '/home/gracekim/workspace/test_ws/build/my_bboxes_msg' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --install /home/gracekim/workspace/test_ws/build/my_bboxes_msg

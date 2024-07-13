@@ -1,0 +1,6 @@
+[0.000000] (-) TimerEvent: {}
+[0.000445] (-) JobUnselected: {'identifier': 'my_bboxes_msg'}
+[0.000704] (-) JobUnselected: {'identifier': 'px4_msgs'}
+[0.000734] (-) JobUnselected: {'identifier': 'test_nodes'}
+[0.000756] (-) JobUnselected: {'identifier': 'yolo_detection'}
+[0.001032] (-) EventReactorShutdown: {}

@@ -1,0 +1,1 @@
+ament_cmake_symlink_install_targets("TARGET_FILES" "/home/gracekim/workspace/test_ws/build/my_bboxes_msg/libmy_bboxes_msg__rosidl_typesupport_fastrtps_cpp.so" "TARGETS" "my_bboxes_msg__rosidl_typesupport_fastrtps_cpp" "ARCHIVE_DESTINATION" "lib" "LIBRARY_DESTINATION" "lib" "RUNTIME_DESTINATION" "bin")

@@ -1,0 +1,13 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from my_bboxes_msg/msg/YoloTarget.msg
+// generated code does not contain a copyright notice
+
+#include "sensor_msgs/msg/Image.idl"
+
+module my_bboxes_msg {
+  module msg {
+    struct YoloTarget {
+      sensor_msgs::msg::Image image;
+    };
+  };
+};

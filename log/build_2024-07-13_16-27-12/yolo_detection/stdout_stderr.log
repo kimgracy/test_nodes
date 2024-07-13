@@ -1,0 +1,44 @@
+/home/gracekim/.local/lib/python3.8/site-packages/setuptools/dist.py:476: SetuptoolsDeprecationWarning: Invalid dash-separated options
+!!
+
+        ********************************************************************************
+        Usage of dash-separated 'script-dir' will not be supported in future
+        versions. Please use the underscore name 'script_dir' instead.
+
+        By 2024-Sep-26, you need to update your project and remove deprecated calls
+        or your builds will no longer be supported.
+
+        See https://setuptools.pypa.io/en/latest/userguide/declarative_config.html for details.
+        ********************************************************************************
+
+!!
+  opt = self.warn_dash_deprecation(opt, section)
+running develop
+/home/gracekim/.local/lib/python3.8/site-packages/setuptools/command/develop.py:42: EasyInstallDeprecationWarning: easy_install command is deprecated.
+!!
+
+        ********************************************************************************
+        Please avoid running ``setup.py`` and ``easy_install``.
+        Instead, use pypa/build, pypa/installer or other
+        standards-based tools.
+
+        See https://github.com/pypa/setuptools/issues/917 for details.
+        ********************************************************************************
+
+!!
+  easy_install.initialize_options(self)
+running egg_info
+writing yolo_detection.egg-info/PKG-INFO
+writing dependency_links to yolo_detection.egg-info/dependency_links.txt
+writing entry points to yolo_detection.egg-info/entry_points.txt
+writing requirements to yolo_detection.egg-info/requires.txt
+writing top-level names to yolo_detection.egg-info/top_level.txt
+reading manifest file 'yolo_detection.egg-info/SOURCES.txt'
+writing manifest file 'yolo_detection.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages/yolo-detection.egg-link (link to .)
+Installing test_01 script to /home/gracekim/workspace/test_ws/install/yolo_detection/lib/yolo_detection
+Installing yolo_detector script to /home/gracekim/workspace/test_ws/install/yolo_detection/lib/yolo_detection
+
+Installed /home/gracekim/workspace/test_ws/build/yolo_detection
+running symlink_data

@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: yolo_detection
+Version: 0.0.0
+Summary: YOLOv5 object detection with ROS2
+Maintainer: chaewon
+Maintainer-email: gbll0305@gmail.com
+License: Apache License 2.0
+Requires-Dist: setuptools

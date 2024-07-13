@@ -1,0 +1,12 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from my_bboxes_msg/msg/VehiclePhase.msg
+// generated code does not contain a copyright notice
+
+
+module my_bboxes_msg {
+  module msg {
+    struct VehiclePhase {
+      string phase;
+    };
+  };
+};

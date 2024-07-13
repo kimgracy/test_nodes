@@ -1,0 +1,45 @@
+[0.539s] Invoking command in '/home/gracekim/workspace/test_ws/build/yolo_detection': AMENT_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg LD_LIBRARY_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/gracekim/workspace/test_ws/build/yolo_detection/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/yolo_detection/build --no-deps symlink_data
+[0.617s] /home/gracekim/.local/lib/python3.8/site-packages/setuptools/dist.py:476: SetuptoolsDeprecationWarning: Invalid dash-separated options
+[0.618s] !!
+[0.618s] 
+[0.618s]         ********************************************************************************
+[0.618s]         Usage of dash-separated 'script-dir' will not be supported in future
+[0.618s]         versions. Please use the underscore name 'script_dir' instead.
+[0.618s] 
+[0.618s]         By 2024-Sep-26, you need to update your project and remove deprecated calls
+[0.618s]         or your builds will no longer be supported.
+[0.618s] 
+[0.618s]         See https://setuptools.pypa.io/en/latest/userguide/declarative_config.html for details.
+[0.618s]         ********************************************************************************
+[0.618s] 
+[0.618s] !!
+[0.618s]   opt = self.warn_dash_deprecation(opt, section)
+[0.734s] running develop
+[0.734s] /home/gracekim/.local/lib/python3.8/site-packages/setuptools/command/develop.py:42: EasyInstallDeprecationWarning: easy_install command is deprecated.
+[0.734s] !!
+[0.734s] 
+[0.734s]         ********************************************************************************
+[0.734s]         Please avoid running ``setup.py`` and ``easy_install``.
+[0.734s]         Instead, use pypa/build, pypa/installer or other
+[0.735s]         standards-based tools.
+[0.735s] 
+[0.735s]         See https://github.com/pypa/setuptools/issues/917 for details.
+[0.735s]         ********************************************************************************
+[0.735s] 
+[0.735s] !!
+[0.735s]   easy_install.initialize_options(self)
+[0.861s] running egg_info
+[0.871s] writing yolo_detection.egg-info/PKG-INFO
+[0.871s] writing dependency_links to yolo_detection.egg-info/dependency_links.txt
+[0.871s] writing entry points to yolo_detection.egg-info/entry_points.txt
+[0.871s] writing requirements to yolo_detection.egg-info/requires.txt
+[0.871s] writing top-level names to yolo_detection.egg-info/top_level.txt
+[0.892s] reading manifest file 'yolo_detection.egg-info/SOURCES.txt'
+[0.892s] writing manifest file 'yolo_detection.egg-info/SOURCES.txt'
+[0.931s] running build_ext
+[0.931s] Creating /home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages/yolo-detection.egg-link (link to .)
+[0.931s] Installing yolo_detector script to /home/gracekim/workspace/test_ws/install/yolo_detection/lib/yolo_detection
+[0.931s] 
+[0.932s] Installed /home/gracekim/workspace/test_ws/build/yolo_detection
+[0.932s] running symlink_data
+[0.954s] Invoked command in '/home/gracekim/workspace/test_ws/build/yolo_detection' returned '0': AMENT_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg LD_LIBRARY_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/gracekim/workspace/test_ws/build/yolo_detection/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/yolo_detection/build --no-deps symlink_data

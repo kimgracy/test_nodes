@@ -1,0 +1,1 @@
+ament_cmake_symlink_install_targets("TARGET_FILES" "/home/gracekim/workspace/test_ws/build/my_bboxes_msg/rosidl_generator_py/my_bboxes_msg/libmy_bboxes_msg__python.so" "TARGETS" "my_bboxes_msg__python" "ARCHIVE_DESTINATION" "lib" "LIBRARY_DESTINATION" "lib" "RUNTIME_DESTINATION" "bin")

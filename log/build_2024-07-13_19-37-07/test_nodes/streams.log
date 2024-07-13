@@ -1,0 +1,33 @@
+[1.929s] Invoking command in '/home/gracekim/workspace/test_ws/build/test_nodes': PYTHONPATH=/home/gracekim/workspace/test_ws/build/test_nodes/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/yolo_detection:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/test_nodes:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/opt/ros/foxy/lib/python3.8/site-packages /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/test_nodes/build --no-deps symlink_data
+[2.422s] /home/gracekim/.local/lib/python3.8/site-packages/setuptools/command/develop.py:42: EasyInstallDeprecationWarning: easy_install command is deprecated.
+[2.423s] !!
+[2.424s] 
+[2.424s]         ********************************************************************************
+[2.425s]         Please avoid running ``setup.py`` and ``easy_install``.
+[2.425s]         Instead, use pypa/build, pypa/installer or other
+[2.426s]         standards-based tools.
+[2.427s] 
+[2.427s]         See https://github.com/pypa/setuptools/issues/917 for details.
+[2.428s]         ********************************************************************************
+[2.428s] 
+[2.429s] !!
+[2.429s]   easy_install.initialize_options(self)
+[2.430s] running develop
+[2.733s] running egg_info
+[2.752s] writing test_nodes.egg-info/PKG-INFO
+[2.752s] writing dependency_links to test_nodes.egg-info/dependency_links.txt
+[2.753s] writing entry points to test_nodes.egg-info/entry_points.txt
+[2.753s] writing requirements to test_nodes.egg-info/requires.txt
+[2.753s] writing top-level names to test_nodes.egg-info/top_level.txt
+[2.804s] reading manifest file 'test_nodes.egg-info/SOURCES.txt'
+[2.804s] writing manifest file 'test_nodes.egg-info/SOURCES.txt'
+[2.895s] running build_ext
+[2.895s] Creating /home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages/test-nodes.egg-link (link to .)
+[2.897s] Installing mc_test_00 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+[2.897s] Installing mc_test_01 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+[2.897s] Installing mc_test_02 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+[2.897s] Installing yolo_test_01 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+[2.897s] 
+[2.897s] Installed /home/gracekim/workspace/test_ws/build/test_nodes
+[2.898s] running symlink_data
+[2.963s] Invoked command in '/home/gracekim/workspace/test_ws/build/test_nodes' returned '0': PYTHONPATH=/home/gracekim/workspace/test_ws/build/test_nodes/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/yolo_detection:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/test_nodes:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/opt/ros/foxy/lib/python3.8/site-packages /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/test_nodes/build --no-deps symlink_data

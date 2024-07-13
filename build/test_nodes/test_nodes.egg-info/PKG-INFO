@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: test_nodes
+Version: 0.0.0
+Summary: test nodes
+Maintainer: juyong
+Maintainer-email: juyong3393@snu.ac.kr
+License: TODO: License declaration
+Requires-Dist: setuptools

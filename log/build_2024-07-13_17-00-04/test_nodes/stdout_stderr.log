@@ -1,0 +1,31 @@
+/home/gracekim/.local/lib/python3.8/site-packages/setuptools/command/develop.py:42: EasyInstallDeprecationWarning: easy_install command is deprecated.
+!!
+
+        ********************************************************************************
+        Please avoid running ``setup.py`` and ``easy_install``.
+        Instead, use pypa/build, pypa/installer or other
+        standards-based tools.
+
+        See https://github.com/pypa/setuptools/issues/917 for details.
+        ********************************************************************************
+
+!!
+  easy_install.initialize_options(self)
+running develop
+running egg_info
+writing test_nodes.egg-info/PKG-INFO
+writing dependency_links to test_nodes.egg-info/dependency_links.txt
+writing entry points to test_nodes.egg-info/entry_points.txt
+writing requirements to test_nodes.egg-info/requires.txt
+writing top-level names to test_nodes.egg-info/top_level.txt
+reading manifest file 'test_nodes.egg-info/SOURCES.txt'
+writing manifest file 'test_nodes.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages/test-nodes.egg-link (link to .)
+Installing mc_test_00 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+Installing mc_test_01 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+Installing mc_test_02 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+Installing yolo_test_01 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+
+Installed /home/gracekim/workspace/test_ws/build/test_nodes
+running symlink_data

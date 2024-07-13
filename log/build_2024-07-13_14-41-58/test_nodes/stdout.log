@@ -1,0 +1,24 @@
+running develop
+running egg_info
+creating test_nodes.egg-info
+writing test_nodes.egg-info/PKG-INFO
+writing dependency_links to test_nodes.egg-info/dependency_links.txt
+writing entry points to test_nodes.egg-info/entry_points.txt
+writing requirements to test_nodes.egg-info/requires.txt
+writing top-level names to test_nodes.egg-info/top_level.txt
+writing manifest file 'test_nodes.egg-info/SOURCES.txt'
+reading manifest file 'test_nodes.egg-info/SOURCES.txt'
+writing manifest file 'test_nodes.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages/test-nodes.egg-link (link to .)
+Installing mc_test_00 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+Installing mc_test_01 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+Installing mc_test_02 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+
+Installed /home/gracekim/workspace/test_ws/build/test_nodes
+running symlink_data
+creating /home/gracekim/workspace/test_ws/install/test_nodes/share/ament_index
+creating /home/gracekim/workspace/test_ws/install/test_nodes/share/ament_index/resource_index
+creating /home/gracekim/workspace/test_ws/install/test_nodes/share/ament_index/resource_index/packages
+symbolically linking /home/gracekim/workspace/test_ws/build/test_nodes/resource/test_nodes -> /home/gracekim/workspace/test_ws/install/test_nodes/share/ament_index/resource_index/packages
+symbolically linking /home/gracekim/workspace/test_ws/build/test_nodes/package.xml -> /home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes

@@ -1,0 +1,1 @@
+cv_bridge:my_bboxes_msg:rclpy:rosidl_default_runtime:sensor_msgs:std_msgs:v4l2_camera

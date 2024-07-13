@@ -1,0 +1,23 @@
+running develop
+running egg_info
+creating yolo_detection.egg-info
+writing yolo_detection.egg-info/PKG-INFO
+writing dependency_links to yolo_detection.egg-info/dependency_links.txt
+writing entry points to yolo_detection.egg-info/entry_points.txt
+writing requirements to yolo_detection.egg-info/requires.txt
+writing top-level names to yolo_detection.egg-info/top_level.txt
+writing manifest file 'yolo_detection.egg-info/SOURCES.txt'
+reading manifest file 'yolo_detection.egg-info/SOURCES.txt'
+writing manifest file 'yolo_detection.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages/yolo-detection.egg-link (link to .)
+Installing yolo_detector script to /home/gracekim/workspace/test_ws/install/yolo_detection/lib/yolo_detection
+
+Installed /home/gracekim/workspace/test_ws/build/yolo_detection
+running symlink_data
+creating /home/gracekim/workspace/test_ws/install/yolo_detection/share/ament_index
+creating /home/gracekim/workspace/test_ws/install/yolo_detection/share/ament_index/resource_index
+creating /home/gracekim/workspace/test_ws/install/yolo_detection/share/ament_index/resource_index/packages
+symbolically linking /home/gracekim/workspace/test_ws/build/yolo_detection/resource/yolo_detection -> /home/gracekim/workspace/test_ws/install/yolo_detection/share/ament_index/resource_index/packages
+symbolically linking /home/gracekim/workspace/test_ws/build/yolo_detection/package.xml -> /home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection
+symbolically linking /home/gracekim/workspace/test_ws/build/yolo_detection/launch/yolo_detector.launch.py -> /home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection

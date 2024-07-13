@@ -1,0 +1,1 @@
+/home/gracekim/workspace/test_ws/src/px4_msgs/msg/VehicleTrajectoryBezier.msg

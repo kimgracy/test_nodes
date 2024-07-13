@@ -1,0 +1,345 @@
+[0.359s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build', '--symlink-install']
+[0.359s] DEBUG:colcon:Parsed command line arguments: Namespace(allow_overriding=[], ament_cmake_args=None, base_paths=['.'], build_base='build', catkin_cmake_args=None, catkin_skip_building_tests=False, cmake_args=None, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, cmake_target=None, cmake_target_skip_unavailable=False, continue_on_error=False, event_handlers=None, executor='parallel', ignore_user_meta=False, install_base='install', log_base=None, log_level=None, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7f8e8e7fcf70>>, merge_install=False, metas=['./colcon.meta'], mixin=None, mixin_files=None, mixin_verb=('build',), packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_end=None, packages_ignore=None, packages_ignore_regex=None, packages_select=None, packages_select_build_failed=False, packages_select_by_dep=None, packages_select_regex=None, packages_select_test_failures=False, packages_skip=None, packages_skip_build_finished=False, packages_skip_by_dep=None, packages_skip_regex=None, packages_skip_test_passed=False, packages_skip_up_to=None, packages_start=None, packages_up_to=None, packages_up_to_regex=None, parallel_workers=16, paths=None, symlink_install=True, test_result_base=None, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7f8e8e7fcf70>, verb_name='build', verb_parser=<colcon_mixin.mixin.mixin_argument.MixinArgumentDecorator object at 0x7f8e8e810940>)
+[0.438s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.438s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.438s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.438s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.438s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.438s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.439s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/gracekim/workspace/test_ws'
+[0.439s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.439s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.439s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.439s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.439s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.439s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.439s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.439s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.439s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.462s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.462s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.462s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.462s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.462s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.462s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.462s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.462s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.463s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.463s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.463s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.463s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.463s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.463s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.463s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['ignore', 'ignore_ament_install']
+[0.463s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ignore'
+[0.463s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ignore_ament_install'
+[0.463s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['colcon_pkg']
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'colcon_pkg'
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['colcon_meta']
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'colcon_meta'
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['ros']
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ros'
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['cmake', 'python']
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'cmake'
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'python'
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['python_setup_py']
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'python_setup_py'
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bboxes_msg) by extensions ['ignore', 'ignore_ament_install']
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bboxes_msg) by extension 'ignore'
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bboxes_msg) by extension 'ignore_ament_install'
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bboxes_msg) by extensions ['colcon_pkg']
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bboxes_msg) by extension 'colcon_pkg'
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bboxes_msg) by extensions ['colcon_meta']
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bboxes_msg) by extension 'colcon_meta'
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bboxes_msg) by extensions ['ros']
+[0.464s] Level 1:colcon.colcon_core.package_identification:_identify(src/my_bboxes_msg) by extension 'ros'
+[0.468s] DEBUG:colcon.colcon_core.package_identification:Package 'src/my_bboxes_msg' with type 'ros.ament_cmake' and name 'my_bboxes_msg'
+[0.468s] Level 1:colcon.colcon_core.package_identification:_identify(src/px4_msgs) by extensions ['ignore', 'ignore_ament_install']
+[0.469s] Level 1:colcon.colcon_core.package_identification:_identify(src/px4_msgs) by extension 'ignore'
+[0.469s] Level 1:colcon.colcon_core.package_identification:_identify(src/px4_msgs) by extension 'ignore_ament_install'
+[0.469s] Level 1:colcon.colcon_core.package_identification:_identify(src/px4_msgs) by extensions ['colcon_pkg']
+[0.469s] Level 1:colcon.colcon_core.package_identification:_identify(src/px4_msgs) by extension 'colcon_pkg'
+[0.469s] Level 1:colcon.colcon_core.package_identification:_identify(src/px4_msgs) by extensions ['colcon_meta']
+[0.469s] Level 1:colcon.colcon_core.package_identification:_identify(src/px4_msgs) by extension 'colcon_meta'
+[0.469s] Level 1:colcon.colcon_core.package_identification:_identify(src/px4_msgs) by extensions ['ros']
+[0.469s] Level 1:colcon.colcon_core.package_identification:_identify(src/px4_msgs) by extension 'ros'
+[0.470s] DEBUG:colcon.colcon_core.package_identification:Package 'src/px4_msgs' with type 'ros.ament_cmake' and name 'px4_msgs'
+[0.470s] Level 1:colcon.colcon_core.package_identification:_identify(src/vehicle_controller) by extensions ['ignore', 'ignore_ament_install']
+[0.470s] Level 1:colcon.colcon_core.package_identification:_identify(src/vehicle_controller) by extension 'ignore'
+[0.470s] Level 1:colcon.colcon_core.package_identification:_identify(src/vehicle_controller) by extension 'ignore_ament_install'
+[0.470s] Level 1:colcon.colcon_core.package_identification:_identify(src/vehicle_controller) by extensions ['colcon_pkg']
+[0.470s] Level 1:colcon.colcon_core.package_identification:_identify(src/vehicle_controller) by extension 'colcon_pkg'
+[0.471s] Level 1:colcon.colcon_core.package_identification:_identify(src/vehicle_controller) by extensions ['colcon_meta']
+[0.471s] Level 1:colcon.colcon_core.package_identification:_identify(src/vehicle_controller) by extension 'colcon_meta'
+[0.471s] Level 1:colcon.colcon_core.package_identification:_identify(src/vehicle_controller) by extensions ['ros']
+[0.471s] Level 1:colcon.colcon_core.package_identification:_identify(src/vehicle_controller) by extension 'ros'
+[0.472s] DEBUG:colcon.colcon_core.package_identification:Package 'src/vehicle_controller' with type 'ros.ament_python' and name 'test_nodes'
+[0.472s] Level 1:colcon.colcon_core.package_identification:_identify(src/yolo_detection) by extensions ['ignore', 'ignore_ament_install']
+[0.472s] Level 1:colcon.colcon_core.package_identification:_identify(src/yolo_detection) by extension 'ignore'
+[0.472s] Level 1:colcon.colcon_core.package_identification:_identify(src/yolo_detection) by extension 'ignore_ament_install'
+[0.472s] Level 1:colcon.colcon_core.package_identification:_identify(src/yolo_detection) by extensions ['colcon_pkg']
+[0.472s] Level 1:colcon.colcon_core.package_identification:_identify(src/yolo_detection) by extension 'colcon_pkg'
+[0.472s] Level 1:colcon.colcon_core.package_identification:_identify(src/yolo_detection) by extensions ['colcon_meta']
+[0.472s] Level 1:colcon.colcon_core.package_identification:_identify(src/yolo_detection) by extension 'colcon_meta'
+[0.472s] Level 1:colcon.colcon_core.package_identification:_identify(src/yolo_detection) by extensions ['ros']
+[0.472s] Level 1:colcon.colcon_core.package_identification:_identify(src/yolo_detection) by extension 'ros'
+[0.474s] DEBUG:colcon.colcon_core.package_identification:Package 'src/yolo_detection' with type 'ros.ament_python' and name 'yolo_detection'
+[0.474s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.474s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.474s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.474s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.474s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.504s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.504s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.506s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 4 installed packages in /home/gracekim/workspace/test_ws/install
+[0.508s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 311 installed packages in /opt/ros/foxy
+[0.511s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.596s] Level 5:colcon.colcon_core.verb:set package 'my_bboxes_msg' build argument 'cmake_args' from command line to 'None'
+[0.596s] Level 5:colcon.colcon_core.verb:set package 'my_bboxes_msg' build argument 'cmake_target' from command line to 'None'
+[0.596s] Level 5:colcon.colcon_core.verb:set package 'my_bboxes_msg' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.596s] Level 5:colcon.colcon_core.verb:set package 'my_bboxes_msg' build argument 'cmake_clean_cache' from command line to 'False'
+[0.596s] Level 5:colcon.colcon_core.verb:set package 'my_bboxes_msg' build argument 'cmake_clean_first' from command line to 'False'
+[0.596s] Level 5:colcon.colcon_core.verb:set package 'my_bboxes_msg' build argument 'cmake_force_configure' from command line to 'False'
+[0.596s] Level 5:colcon.colcon_core.verb:set package 'my_bboxes_msg' build argument 'ament_cmake_args' from command line to 'None'
+[0.596s] Level 5:colcon.colcon_core.verb:set package 'my_bboxes_msg' build argument 'catkin_cmake_args' from command line to 'None'
+[0.596s] Level 5:colcon.colcon_core.verb:set package 'my_bboxes_msg' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.596s] DEBUG:colcon.colcon_core.verb:Building package 'my_bboxes_msg' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/gracekim/workspace/test_ws/build/my_bboxes_msg', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/gracekim/workspace/test_ws/install/my_bboxes_msg', 'merge_install': False, 'path': '/home/gracekim/workspace/test_ws/src/my_bboxes_msg', 'symlink_install': True, 'test_result_base': None}
+[0.597s] Level 5:colcon.colcon_core.verb:set package 'px4_msgs' build argument 'cmake_args' from command line to 'None'
+[0.597s] Level 5:colcon.colcon_core.verb:set package 'px4_msgs' build argument 'cmake_target' from command line to 'None'
+[0.597s] Level 5:colcon.colcon_core.verb:set package 'px4_msgs' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.597s] Level 5:colcon.colcon_core.verb:set package 'px4_msgs' build argument 'cmake_clean_cache' from command line to 'False'
+[0.597s] Level 5:colcon.colcon_core.verb:set package 'px4_msgs' build argument 'cmake_clean_first' from command line to 'False'
+[0.597s] Level 5:colcon.colcon_core.verb:set package 'px4_msgs' build argument 'cmake_force_configure' from command line to 'False'
+[0.597s] Level 5:colcon.colcon_core.verb:set package 'px4_msgs' build argument 'ament_cmake_args' from command line to 'None'
+[0.597s] Level 5:colcon.colcon_core.verb:set package 'px4_msgs' build argument 'catkin_cmake_args' from command line to 'None'
+[0.597s] Level 5:colcon.colcon_core.verb:set package 'px4_msgs' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.597s] DEBUG:colcon.colcon_core.verb:Building package 'px4_msgs' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/gracekim/workspace/test_ws/build/px4_msgs', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/gracekim/workspace/test_ws/install/px4_msgs', 'merge_install': False, 'path': '/home/gracekim/workspace/test_ws/src/px4_msgs', 'symlink_install': True, 'test_result_base': None}
+[0.598s] Level 5:colcon.colcon_core.verb:set package 'test_nodes' build argument 'cmake_args' from command line to 'None'
+[0.598s] Level 5:colcon.colcon_core.verb:set package 'test_nodes' build argument 'cmake_target' from command line to 'None'
+[0.598s] Level 5:colcon.colcon_core.verb:set package 'test_nodes' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.598s] Level 5:colcon.colcon_core.verb:set package 'test_nodes' build argument 'cmake_clean_cache' from command line to 'False'
+[0.598s] Level 5:colcon.colcon_core.verb:set package 'test_nodes' build argument 'cmake_clean_first' from command line to 'False'
+[0.598s] Level 5:colcon.colcon_core.verb:set package 'test_nodes' build argument 'cmake_force_configure' from command line to 'False'
+[0.598s] Level 5:colcon.colcon_core.verb:set package 'test_nodes' build argument 'ament_cmake_args' from command line to 'None'
+[0.598s] Level 5:colcon.colcon_core.verb:set package 'test_nodes' build argument 'catkin_cmake_args' from command line to 'None'
+[0.598s] Level 5:colcon.colcon_core.verb:set package 'test_nodes' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.598s] DEBUG:colcon.colcon_core.verb:Building package 'test_nodes' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/gracekim/workspace/test_ws/build/test_nodes', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/gracekim/workspace/test_ws/install/test_nodes', 'merge_install': False, 'path': '/home/gracekim/workspace/test_ws/src/vehicle_controller', 'symlink_install': True, 'test_result_base': None}
+[0.599s] Level 5:colcon.colcon_core.verb:set package 'yolo_detection' build argument 'cmake_args' from command line to 'None'
+[0.599s] Level 5:colcon.colcon_core.verb:set package 'yolo_detection' build argument 'cmake_target' from command line to 'None'
+[0.599s] Level 5:colcon.colcon_core.verb:set package 'yolo_detection' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.599s] Level 5:colcon.colcon_core.verb:set package 'yolo_detection' build argument 'cmake_clean_cache' from command line to 'False'
+[0.599s] Level 5:colcon.colcon_core.verb:set package 'yolo_detection' build argument 'cmake_clean_first' from command line to 'False'
+[0.599s] Level 5:colcon.colcon_core.verb:set package 'yolo_detection' build argument 'cmake_force_configure' from command line to 'False'
+[0.599s] Level 5:colcon.colcon_core.verb:set package 'yolo_detection' build argument 'ament_cmake_args' from command line to 'None'
+[0.599s] Level 5:colcon.colcon_core.verb:set package 'yolo_detection' build argument 'catkin_cmake_args' from command line to 'None'
+[0.599s] Level 5:colcon.colcon_core.verb:set package 'yolo_detection' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.599s] DEBUG:colcon.colcon_core.verb:Building package 'yolo_detection' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/gracekim/workspace/test_ws/build/yolo_detection', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/gracekim/workspace/test_ws/install/yolo_detection', 'merge_install': False, 'path': '/home/gracekim/workspace/test_ws/src/yolo_detection', 'symlink_install': True, 'test_result_base': None}
+[0.599s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.601s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.601s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/gracekim/workspace/test_ws/src/my_bboxes_msg' with build type 'ament_cmake'
+[0.601s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/gracekim/workspace/test_ws/src/my_bboxes_msg'
+[0.604s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.604s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.604s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.627s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/gracekim/workspace/test_ws/src/px4_msgs' with build type 'ament_cmake'
+[0.628s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/gracekim/workspace/test_ws/src/px4_msgs'
+[0.628s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.629s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.686s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/gracekim/workspace/test_ws/build/my_bboxes_msg': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --build /home/gracekim/workspace/test_ws/build/my_bboxes_msg -- -j16 -l16
+[0.764s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/gracekim/workspace/test_ws/build/px4_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --build /home/gracekim/workspace/test_ws/build/px4_msgs -- -j16 -l16
+[1.627s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/gracekim/workspace/test_ws/build/my_bboxes_msg' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --build /home/gracekim/workspace/test_ws/build/my_bboxes_msg -- -j16 -l16
+[2.172s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/gracekim/workspace/test_ws/build/my_bboxes_msg': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --install /home/gracekim/workspace/test_ws/build/my_bboxes_msg
+[2.693s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(my_bboxes_msg)
+[2.711s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/gracekim/workspace/test_ws/build/my_bboxes_msg' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --install /home/gracekim/workspace/test_ws/build/my_bboxes_msg
+[2.723s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg' for CMake module files
+[2.729s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg' for CMake config files
+[2.731s] Level 1:colcon.colcon_core.shell:create_environment_hook('my_bboxes_msg', 'cmake_prefix_path')
+[2.733s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/cmake_prefix_path.ps1'
+[2.738s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/cmake_prefix_path.dsv'
+[2.742s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/cmake_prefix_path.sh'
+[2.749s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib'
+[2.751s] Level 1:colcon.colcon_core.shell:create_environment_hook('my_bboxes_msg', 'ld_library_path_lib')
+[2.753s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/ld_library_path_lib.ps1'
+[2.756s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/ld_library_path_lib.dsv'
+[2.759s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/ld_library_path_lib.sh'
+[2.761s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/bin'
+[2.762s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/pkgconfig/my_bboxes_msg.pc'
+[2.764s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages'
+[2.765s] Level 1:colcon.colcon_core.shell:create_environment_hook('my_bboxes_msg', 'pythonpath')
+[2.767s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/pythonpath.ps1'
+[2.769s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/pythonpath.dsv'
+[2.772s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/pythonpath.sh'
+[2.775s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/bin'
+[2.779s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.ps1'
+[2.787s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.dsv'
+[2.792s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.sh'
+[2.798s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.bash'
+[2.803s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.zsh'
+[2.807s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/colcon-core/packages/my_bboxes_msg)
+[2.999s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(my_bboxes_msg)
+[3.000s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg' for CMake module files
+[3.000s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg' for CMake config files
+[3.001s] Level 1:colcon.colcon_core.shell:create_environment_hook('my_bboxes_msg', 'cmake_prefix_path')
+[3.001s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/cmake_prefix_path.ps1'
+[3.002s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/cmake_prefix_path.dsv'
+[3.002s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/cmake_prefix_path.sh'
+[3.003s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib'
+[3.003s] Level 1:colcon.colcon_core.shell:create_environment_hook('my_bboxes_msg', 'ld_library_path_lib')
+[3.003s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/ld_library_path_lib.ps1'
+[3.004s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/ld_library_path_lib.dsv'
+[3.008s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/ld_library_path_lib.sh'
+[3.008s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/bin'
+[3.008s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/pkgconfig/my_bboxes_msg.pc'
+[3.009s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages'
+[3.009s] Level 1:colcon.colcon_core.shell:create_environment_hook('my_bboxes_msg', 'pythonpath')
+[3.009s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/pythonpath.ps1'
+[3.010s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/pythonpath.dsv'
+[3.010s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/hook/pythonpath.sh'
+[3.010s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/bin'
+[3.011s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.ps1'
+[3.012s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.dsv'
+[3.012s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.sh'
+[3.013s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.bash'
+[3.013s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/my_bboxes_msg/package.zsh'
+[3.013s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/gracekim/workspace/test_ws/install/my_bboxes_msg/share/colcon-core/packages/my_bboxes_msg)
+[3.014s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/gracekim/workspace/test_ws/src/yolo_detection' with build type 'ament_python'
+[3.014s] Level 1:colcon.colcon_core.shell:create_environment_hook('yolo_detection', 'ament_prefix_path')
+[3.018s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection/hook/ament_prefix_path.ps1'
+[3.019s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection/hook/ament_prefix_path.dsv'
+[3.020s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection/hook/ament_prefix_path.sh'
+[3.020s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[3.020s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[3.688s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/gracekim/workspace/test_ws/src/yolo_detection'
+[3.692s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[3.693s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[9.230s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/gracekim/workspace/test_ws/build/yolo_detection': CMAKE_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg:/home/gracekim/workspace/test_ws/install/px4_msgs LD_LIBRARY_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib:/home/gracekim/workspace/test_ws/install/px4_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/foxy/opt/yaml_cpp_vendor/lib:/opt/ros/foxy/opt/rviz_ogre_vendor/lib:/opt/ros/foxy/lib/x86_64-linux-gnu:/opt/ros/foxy/lib PYTHONPATH=/home/gracekim/workspace/test_ws/build/yolo_detection/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/yolo_detection:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/test_nodes:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages:/opt/ros/foxy/lib/python3.8/site-packages /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/yolo_detection/build --no-deps symlink_data
+[12.001s] Level 1:colcon.colcon_core.shell:create_environment_hook('yolo_detection', 'pythonpath_develop')
+[12.003s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/build/yolo_detection/share/yolo_detection/hook/pythonpath_develop.ps1'
+[12.007s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/build/yolo_detection/share/yolo_detection/hook/pythonpath_develop.dsv'
+[12.013s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/build/yolo_detection/share/yolo_detection/hook/pythonpath_develop.sh'
+[12.018s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/gracekim/workspace/test_ws/build/yolo_detection' returned '0': CMAKE_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg:/home/gracekim/workspace/test_ws/install/px4_msgs LD_LIBRARY_PATH=/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib:/home/gracekim/workspace/test_ws/install/px4_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/foxy/opt/yaml_cpp_vendor/lib:/opt/ros/foxy/opt/rviz_ogre_vendor/lib:/opt/ros/foxy/lib/x86_64-linux-gnu:/opt/ros/foxy/lib PYTHONPATH=/home/gracekim/workspace/test_ws/build/yolo_detection/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/yolo_detection:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/test_nodes:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages:/opt/ros/foxy/lib/python3.8/site-packages /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/yolo_detection/build --no-deps symlink_data
+[12.021s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/yolo_detection' for CMake module files
+[12.025s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/yolo_detection' for CMake config files
+[12.029s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/yolo_detection/lib'
+[12.030s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/yolo_detection/bin'
+[12.030s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/yolo_detection/lib/pkgconfig/yolo_detection.pc'
+[12.032s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages'
+[12.032s] Level 1:colcon.colcon_core.shell:create_environment_hook('yolo_detection', 'pythonpath')
+[12.034s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection/hook/pythonpath.ps1'
+[12.036s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection/hook/pythonpath.dsv'
+[12.046s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection/hook/pythonpath.sh'
+[12.070s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/yolo_detection/bin'
+[12.071s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(yolo_detection)
+[12.073s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection/package.ps1'
+[12.079s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection/package.dsv'
+[12.082s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection/package.sh'
+[12.085s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection/package.bash'
+[12.087s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/yolo_detection/share/yolo_detection/package.zsh'
+[12.090s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/gracekim/workspace/test_ws/install/yolo_detection/share/colcon-core/packages/yolo_detection)
+[12.565s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/gracekim/workspace/test_ws/build/px4_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --build /home/gracekim/workspace/test_ws/build/px4_msgs -- -j16 -l16
+[21.030s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/gracekim/workspace/test_ws/build/px4_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --install /home/gracekim/workspace/test_ws/build/px4_msgs
+[24.818s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(px4_msgs)
+[24.822s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs' for CMake module files
+[24.827s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs' for CMake config files
+[24.830s] Level 1:colcon.colcon_core.shell:create_environment_hook('px4_msgs', 'cmake_prefix_path')
+[24.832s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/cmake_prefix_path.ps1'
+[24.837s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/gracekim/workspace/test_ws/build/px4_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/gracekim/workspace/test_ws/install/yolo_detection:/home/gracekim/workspace/test_ws/install/test_nodes:/opt/ros/foxy /usr/local/bin/cmake --install /home/gracekim/workspace/test_ws/build/px4_msgs
+[24.850s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/cmake_prefix_path.dsv'
+[24.852s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/cmake_prefix_path.sh'
+[24.856s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs/lib'
+[24.857s] Level 1:colcon.colcon_core.shell:create_environment_hook('px4_msgs', 'ld_library_path_lib')
+[24.859s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/ld_library_path_lib.ps1'
+[24.861s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/ld_library_path_lib.dsv'
+[24.876s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/ld_library_path_lib.sh'
+[24.879s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs/bin'
+[24.879s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs/lib/pkgconfig/px4_msgs.pc'
+[24.881s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages'
+[24.882s] Level 1:colcon.colcon_core.shell:create_environment_hook('px4_msgs', 'pythonpath')
+[24.883s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/pythonpath.ps1'
+[24.886s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/pythonpath.dsv'
+[24.888s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/pythonpath.sh'
+[24.896s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs/bin'
+[24.899s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/package.ps1'
+[24.904s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/package.dsv'
+[24.907s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/package.sh'
+[24.912s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/package.bash'
+[24.914s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/package.zsh'
+[24.917s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/gracekim/workspace/test_ws/install/px4_msgs/share/colcon-core/packages/px4_msgs)
+[32.700s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(px4_msgs)
+[32.703s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs' for CMake module files
+[32.709s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs' for CMake config files
+[32.711s] Level 1:colcon.colcon_core.shell:create_environment_hook('px4_msgs', 'cmake_prefix_path')
+[32.714s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/cmake_prefix_path.ps1'
+[32.718s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/cmake_prefix_path.dsv'
+[32.720s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/cmake_prefix_path.sh'
+[32.727s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs/lib'
+[32.728s] Level 1:colcon.colcon_core.shell:create_environment_hook('px4_msgs', 'ld_library_path_lib')
+[32.730s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/ld_library_path_lib.ps1'
+[32.733s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/ld_library_path_lib.dsv'
+[32.735s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/ld_library_path_lib.sh'
+[32.737s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs/bin'
+[32.738s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs/lib/pkgconfig/px4_msgs.pc'
+[32.740s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages'
+[32.741s] Level 1:colcon.colcon_core.shell:create_environment_hook('px4_msgs', 'pythonpath')
+[32.743s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/pythonpath.ps1'
+[32.746s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/pythonpath.dsv'
+[32.749s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/hook/pythonpath.sh'
+[32.752s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/px4_msgs/bin'
+[32.756s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/package.ps1'
+[32.762s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/package.dsv'
+[32.768s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/package.sh'
+[32.772s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/package.bash'
+[32.775s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/px4_msgs/share/px4_msgs/package.zsh'
+[32.779s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/gracekim/workspace/test_ws/install/px4_msgs/share/colcon-core/packages/px4_msgs)
+[32.783s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/gracekim/workspace/test_ws/src/vehicle_controller' with build type 'ament_python'
+[32.786s] Level 1:colcon.colcon_core.shell:create_environment_hook('test_nodes', 'ament_prefix_path')
+[32.789s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes/hook/ament_prefix_path.ps1'
+[32.793s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes/hook/ament_prefix_path.dsv'
+[32.795s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes/hook/ament_prefix_path.sh'
+[32.799s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[32.800s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[33.398s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/gracekim/workspace/test_ws/src/vehicle_controller'
+[33.404s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[33.408s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[34.715s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/gracekim/workspace/test_ws/build/test_nodes': PYTHONPATH=/home/gracekim/workspace/test_ws/build/test_nodes/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/yolo_detection:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/test_nodes:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/opt/ros/foxy/lib/python3.8/site-packages /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/test_nodes/build --no-deps symlink_data
+[35.737s] Level 1:colcon.colcon_core.shell:create_environment_hook('test_nodes', 'pythonpath_develop')
+[35.740s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/build/test_nodes/share/test_nodes/hook/pythonpath_develop.ps1'
+[35.744s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/build/test_nodes/share/test_nodes/hook/pythonpath_develop.dsv'
+[35.747s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/build/test_nodes/share/test_nodes/hook/pythonpath_develop.sh'
+[35.749s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/gracekim/workspace/test_ws/build/test_nodes' returned '0': PYTHONPATH=/home/gracekim/workspace/test_ws/build/test_nodes/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/yolo_detection:/home/gracekim/workspace/test_ws/install/yolo_detection/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/build/test_nodes:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/opt/ros/foxy/lib/python3.8/site-packages /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/test_nodes/build --no-deps symlink_data
+[35.750s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/test_nodes' for CMake module files
+[35.751s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/test_nodes' for CMake config files
+[35.751s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/test_nodes/lib'
+[35.751s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/test_nodes/bin'
+[35.751s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/test_nodes/lib/pkgconfig/test_nodes.pc'
+[35.752s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages'
+[35.752s] Level 1:colcon.colcon_core.shell:create_environment_hook('test_nodes', 'pythonpath')
+[35.752s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes/hook/pythonpath.ps1'
+[35.753s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes/hook/pythonpath.dsv'
+[35.753s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes/hook/pythonpath.sh'
+[35.754s] Level 1:colcon.colcon_core.environment:checking '/home/gracekim/workspace/test_ws/install/test_nodes/bin'
+[35.754s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(test_nodes)
+[35.754s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes/package.ps1'
+[35.755s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes/package.dsv'
+[35.756s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes/package.sh'
+[35.756s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes/package.bash'
+[35.757s] INFO:colcon.colcon_core.shell:Creating package script '/home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes/package.zsh'
+[35.757s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/gracekim/workspace/test_ws/install/test_nodes/share/colcon-core/packages/test_nodes)
+[35.757s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[35.759s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[35.759s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[35.760s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[35.769s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[35.769s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[35.770s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[35.792s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[35.793s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/gracekim/workspace/test_ws/install/local_setup.ps1'
+[35.794s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/gracekim/workspace/test_ws/install/_local_setup_util_ps1.py'
+[35.796s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/gracekim/workspace/test_ws/install/setup.ps1'
+[35.797s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/gracekim/workspace/test_ws/install/local_setup.sh'
+[35.798s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/gracekim/workspace/test_ws/install/_local_setup_util_sh.py'
+[35.799s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/gracekim/workspace/test_ws/install/setup.sh'
+[35.800s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/gracekim/workspace/test_ws/install/local_setup.bash'
+[35.800s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/gracekim/workspace/test_ws/install/setup.bash'
+[35.802s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/gracekim/workspace/test_ws/install/local_setup.zsh'
+[35.802s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/gracekim/workspace/test_ws/install/setup.zsh'

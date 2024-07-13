@@ -1,0 +1,39 @@
+[0.589s] Invoking command in '/home/gracekim/workspace/test_ws/build/test_nodes': AMENT_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/px4_msgs:/home/gracekim/workspace/test_ws/install/my_bboxes_msg:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/px4_msgs:/home/gracekim/workspace/test_ws/install/my_bboxes_msg LD_LIBRARY_PATH=/home/gracekim/workspace/test_ws/install/px4_msgs/lib:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/gracekim/workspace/test_ws/build/test_nodes/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/test_nodes/build --no-deps symlink_data
+[0.818s] /home/gracekim/.local/lib/python3.8/site-packages/setuptools/command/develop.py:42: EasyInstallDeprecationWarning: easy_install command is deprecated.
+[0.818s] !!
+[0.818s] 
+[0.818s]         ********************************************************************************
+[0.818s]         Please avoid running ``setup.py`` and ``easy_install``.
+[0.818s]         Instead, use pypa/build, pypa/installer or other
+[0.818s]         standards-based tools.
+[0.818s] 
+[0.818s]         See https://github.com/pypa/setuptools/issues/917 for details.
+[0.818s]         ********************************************************************************
+[0.818s] 
+[0.818s] !!
+[0.818s]   easy_install.initialize_options(self)
+[0.818s] running develop
+[0.955s] running egg_info
+[0.956s] creating test_nodes.egg-info
+[0.966s] writing test_nodes.egg-info/PKG-INFO
+[0.966s] writing dependency_links to test_nodes.egg-info/dependency_links.txt
+[0.967s] writing entry points to test_nodes.egg-info/entry_points.txt
+[0.967s] writing requirements to test_nodes.egg-info/requires.txt
+[0.967s] writing top-level names to test_nodes.egg-info/top_level.txt
+[0.967s] writing manifest file 'test_nodes.egg-info/SOURCES.txt'
+[0.990s] reading manifest file 'test_nodes.egg-info/SOURCES.txt'
+[0.990s] writing manifest file 'test_nodes.egg-info/SOURCES.txt'
+[1.033s] running build_ext
+[1.033s] Creating /home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages/test-nodes.egg-link (link to .)
+[1.033s] Installing mc_test_00 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+[1.033s] Installing mc_test_01 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+[1.033s] Installing mc_test_02 script to /home/gracekim/workspace/test_ws/install/test_nodes/lib/test_nodes
+[1.034s] 
+[1.034s] Installed /home/gracekim/workspace/test_ws/build/test_nodes
+[1.034s] running symlink_data
+[1.034s] creating /home/gracekim/workspace/test_ws/install/test_nodes/share/ament_index
+[1.034s] creating /home/gracekim/workspace/test_ws/install/test_nodes/share/ament_index/resource_index
+[1.034s] creating /home/gracekim/workspace/test_ws/install/test_nodes/share/ament_index/resource_index/packages
+[1.034s] symbolically linking /home/gracekim/workspace/test_ws/build/test_nodes/resource/test_nodes -> /home/gracekim/workspace/test_ws/install/test_nodes/share/ament_index/resource_index/packages
+[1.034s] symbolically linking /home/gracekim/workspace/test_ws/build/test_nodes/package.xml -> /home/gracekim/workspace/test_ws/install/test_nodes/share/test_nodes
+[1.063s] Invoked command in '/home/gracekim/workspace/test_ws/build/test_nodes' returned '0': AMENT_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/px4_msgs:/home/gracekim/workspace/test_ws/install/my_bboxes_msg:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/gracekim/workspace/test_ws/install/px4_msgs:/home/gracekim/workspace/test_ws/install/my_bboxes_msg LD_LIBRARY_PATH=/home/gracekim/workspace/test_ws/install/px4_msgs/lib:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/gracekim/workspace/test_ws/build/test_nodes/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gracekim/workspace/test_ws/install/test_nodes/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/px4_msgs/lib/python3.8/site-packages:/home/gracekim/workspace/test_ws/install/my_bboxes_msg/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py develop --editable --build-directory /home/gracekim/workspace/test_ws/build/test_nodes/build --no-deps symlink_data
