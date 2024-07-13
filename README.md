@@ -64,6 +64,13 @@
     type: px4_msgs::msg::GimbalManagerSetManualControl
     ```
 
+11. PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/1040_gazebo-classic_standard_vtol 가장 아래에 추가 (짐벌제어)
+   ```
+   param set-default MNT_MODE_IN 4
+   param set-default MNT_MODE_OUT 2
+   ```
+
+
 # Installation
 
 1. 해당 repo fork  
