@@ -23,6 +23,7 @@ setup(
             'mc_test_00 = test_nodes.mc_test_00_arm:main',
             'mc_test_01 = test_nodes.mc_test_01_takeoff_and_land:main',
             'mc_test_02 = test_nodes.mc_test_02_mc_square:main',
+            'yolo_test_01 = test_nodes.yolo_test_01:main'
         ],
     },
 )
