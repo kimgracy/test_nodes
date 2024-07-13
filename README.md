@@ -210,15 +210,50 @@ source ./install/local_setup.bash
 
 # Run
 
+터미널 6개를 실행해야 한다.
+
+terminal 1:
 ```
+MicroXRCEAgent udp4 -p 8888
+```
+
+terminal 2:
+```
+./QGroundControl.AppImage
+```
+
+terminal 3:
+```
+cd PX4-Autopilot/
+make px4_sitl gazebo-classic_standard_vtol__bulnabi
+```
+
+terminal 4:
+```
+ros2 run v4l2_camera v4l2_camera_node
+```
+
+terminal 5:
+```
+cd test_ws/
+source ./install/local_setup.bash   (rosfoxy)
+ros2 run yolo_detection yolo_detector 
+```
+
+terminal 6:
+```
+cd test_ws/
+source ./install/local_setup.bash   (rosfoxy)
 ros2 run test_nodes mc_test_00
 ros2 run test_nodes mc_test_01
 ros2 run test_nodes mc_test_02 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_02_waypoint.yaml
+ros2 run test_nodes yolo_test_01
 ```
 
 - mc_test_00: arming
 - mc_test_01: takeoff → land
 - mc_test_02: takeoff → N 2m → NE 2m → E 2m → home → land (사각 비행)
+- yolo_test_01: takeoff → gimbal control → ladder detection → land
 
 <br/>
 <br/>
