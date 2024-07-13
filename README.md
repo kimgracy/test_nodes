@@ -166,11 +166,12 @@
 
 # Build
 
-- 아래와 같이 colcon build 한번만 실행해도 되는걸로 변경했는데 잘 돌아가는지 채원아 확인 부탁...
 - 해당 repo에 아직 auto landing 관련 코드는 없기 때문에 auto landing은 dependency 잘 고려해서 build 문제 없도록 코드 올리기!
+- my_bboxes_msg를 먼저 build하고 나머지 패키지를 build해야 오류가 생기지 않는다.
 
 ```
 cd test_ws
+colcon build --symlink-install --packages-select my_bboxes_msg                  // cbp my_bboxes_msg
 colcon build --symlink-install                  // cba
 source ./install/local_setup.bash
 ```
