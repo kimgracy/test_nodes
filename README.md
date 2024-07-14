@@ -55,21 +55,22 @@
    ```
 
 10. PX4-Autopilot/src/modules/uxrce_dds_client/dds_topics.yaml 에서 아래 내용들을 각각 publications와 subscriptions 항목의 가장 마지막 부분에 추가
+
     ```
     - topic: /fmu/out/vtol_vehicle_status
     type: px4_msgs::msg::VtolVehicleStatus
     ```
+
     ```
     - topic: /fmu/in/gimbal_manager_set_manual_control
     type: px4_msgs::msg::GimbalManagerSetManualControl
     ```
 
 11. PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/1040_gazebo-classic_standard_vtol 가장 아래에 추가 (짐벌제어)
-      ```
-      param set-default MNT_MODE_IN 4
-      param set-default MNT_MODE_OUT 2
-      ```
-
+    ```
+    param set-default MNT_MODE_IN 4
+    param set-default MNT_MODE_OUT 2
+    ```
 
 # Installation
 
@@ -221,34 +222,40 @@ source ./install/local_setup.bash
 터미널 6개를 실행해야 한다.
 
 terminal 1:
+
 ```
 MicroXRCEAgent udp4 -p 8888
 ```
 
 terminal 2:
+
 ```
 ./QGroundControl.AppImage
 ```
 
 terminal 3:
+
 ```
 cd PX4-Autopilot/
 make px4_sitl gazebo-classic_standard_vtol__bulnabi
 ```
 
 terminal 4:
+
 ```
 ros2 run v4l2_camera v4l2_camera_node
 ```
 
 terminal 5:
+
 ```
 cd test_ws/
 source ./install/local_setup.bash   (rosfoxy)
-ros2 run yolo_detection yolo_detector 
+ros2 run yolo_detection yolo_detector
 ```
 
 terminal 6:
+
 ```
 cd test_ws/
 source ./install/local_setup.bash   (rosfoxy)
@@ -256,12 +263,16 @@ ros2 run test_nodes mc_test_00
 ros2 run test_nodes mc_test_01
 ros2 run test_nodes mc_test_02 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_02_waypoint.yaml
 ros2 run test_nodes yolo_test_01
+ros2 run test_nodes yolo_test_02
+ros2 run test_nodes yolo_test_03
 ```
 
 - mc_test_00: arming
 - mc_test_01: takeoff → land
 - mc_test_02: takeoff → N 2m → NE 2m → E 2m → home → land (사각 비행)
 - yolo_test_01: takeoff → gimbal control → ladder detection → land
+- yolo_test_02: takeoff → gimbal control → heading 방향으로 5m → 가다가 ladder detect 시 stop → land
+- yolo_test_03: takeoff → gimbal control → heading 방향으로 5m → 가다가 ladder detect 시 stop → ladder 위치 반대로 5m 이동 → land
 
 <br/>
 <br/>

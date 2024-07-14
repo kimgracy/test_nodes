@@ -88,6 +88,9 @@ class VehicleController(Node):
         self.obstacle_y = 0
         self.obstacle_orientation = ''
 
+        self.gimbal_pitchangle = 0.0
+        self.gimbal_yawangle = 0.0
+
         """
         4. Create Subscribers
         """
@@ -194,7 +197,7 @@ class VehicleController(Node):
             self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
             self.current_goal = np.array([(10.0)*math.cos(self.yaw), (10.0)*math.sin(self.yaw), -5.0])
             self.phase = 0.5
-        elif self.phase ==0.5:
+        elif self.phase == 0.5:
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
             if self.obstacle_label == 'ladder':
                 self.phase = 1
