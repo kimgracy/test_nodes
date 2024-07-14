@@ -58,7 +58,7 @@ class YoloDetector(Node):
         # create a subscriber for the v4l2 image topic
         self.subscription = self.create_subscription(
             Image,
-            '/image_raw',
+            '/camera/image_raw',
             self.image_callback,
             10)
 

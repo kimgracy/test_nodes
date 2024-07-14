@@ -133,20 +133,6 @@ class VehicleController(Node):
     def land(self):
         self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
         self.phase = -2
-    
-    def publish_gimbal_control(self, **kwargs) :
-        msg = GimbalManagerSetManualControl()
-        msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
-        msg.origin_sysid = 0
-        msg.origin_compid = 0
-        msg.flags = GimbalManagerSetManualControl.GIMBAL_MANAGER_FLAGS_ROLL_LOCK \
-                    + GimbalManagerSetManualControl.GIMBAL_MANAGER_FLAGS_PITCH_LOCK \
-                    + GimbalManagerSetManualControl.GIMBAL_MANAGER_FLAGS_YAW_LOCK
-        msg.pitch = kwargs.get("pitch", float('nan'))
-        msg.yaw = kwargs.get("yaw", float('nan'))
-        msg.pitch_rate = float('nan')
-        msg.yaw_rate = float('nan')
-        self.gimbal_publisher.publish(msg)
 
     """
     Callback functions for the timers
@@ -180,13 +166,17 @@ class VehicleController(Node):
     
     def main_timer_callback(self):
         if self.phase == 0:
-            self.current_goal = np.array([5.0, 0.0, 0.0])
+            self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
+            self.current_goal = np.array([(5.0)*math.cos(self.yaw), (5.0)*math.sin(self.yaw), 0.0])
+            self.phase = 0.5
+        elif self.phase ==0.5:
+            self.current_goal = np.array([(5.0)*math.cos(self.yaw), (5.0)*math.sin(self.yaw), 0.0])
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
             if self.obstacle_label == 'ladder':
                 self.phase = 1
                 self.time_checker = 0
         elif self.phase == 1:
-            self.current_goal = np.array([0.0, 0.0, 0.0])
+            self.current_goal = self.pos
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
             print(f'Direction of obstacle: {self.obstacle_orientation}')
             self.time_checker += 1
@@ -264,6 +254,20 @@ class VehicleController(Node):
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
         # self.get_logger().info(f"Publishing position setpoints {setposition}")
+
+    def publish_gimbal_control(self, **kwargs) :
+        msg = GimbalManagerSetManualControl()
+        msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
+        msg.origin_sysid = 0
+        msg.origin_compid = 0
+        msg.flags = GimbalManagerSetManualControl.GIMBAL_MANAGER_FLAGS_ROLL_LOCK \
+                    + GimbalManagerSetManualControl.GIMBAL_MANAGER_FLAGS_PITCH_LOCK \
+                    + GimbalManagerSetManualControl.GIMBAL_MANAGER_FLAGS_YAW_LOCK
+        msg.pitch = kwargs.get("pitch", float('nan'))
+        msg.yaw = kwargs.get("yaw", float('nan'))
+        msg.pitch_rate = float('nan')
+        msg.yaw_rate = float('nan')
+        self.gimbal_publisher.publish(msg)
     
 def main(args = None):
     rclpy.init(args=args)
