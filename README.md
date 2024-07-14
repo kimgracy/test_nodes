@@ -64,6 +64,13 @@
     type: px4_msgs::msg::GimbalManagerSetManualControl
     ```
 
+11. PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/1040_gazebo-classic_standard_vtol 가장 아래에 추가 (짐벌제어)
+      ```
+      param set-default MNT_MODE_IN 4
+      param set-default MNT_MODE_OUT 2
+      ```
+
+
 # Installation
 
 1. 해당 repo fork  
@@ -166,12 +173,13 @@
 
 # Build
 
-- 아래와 같이 colcon build 한번만 실행해도 되는걸로 변경했는데 잘 돌아가는지 채원아 확인 부탁...
+- 아래와 같이 my_bboxes_msg를 먼저 build하고 나머지 패키지를 build해야 오류가 생기지 않는다.
 - 해당 repo에 아직 auto landing 관련 코드는 없기 때문에 auto landing은 dependency 잘 고려해서 build 문제 없도록 코드 올리기!
 
 ```
 cd test_ws
-colcon build --symlink-install                  // cba
+colcon build --symlink-install --packages-select my_bboxes_msg                  // cbp my_bboxes_msg
+colcon build --symlink-install                                                  // cba
 source ./install/local_setup.bash
 ```
 
@@ -210,15 +218,50 @@ source ./install/local_setup.bash
 
 # Run
 
+터미널 6개를 실행해야 한다.
+
+terminal 1:
 ```
+MicroXRCEAgent udp4 -p 8888
+```
+
+terminal 2:
+```
+./QGroundControl.AppImage
+```
+
+terminal 3:
+```
+cd PX4-Autopilot/
+make px4_sitl gazebo-classic_standard_vtol__bulnabi
+```
+
+terminal 4:
+```
+ros2 run v4l2_camera v4l2_camera_node
+```
+
+terminal 5:
+```
+cd test_ws/
+source ./install/local_setup.bash   (rosfoxy)
+ros2 run yolo_detection yolo_detector 
+```
+
+terminal 6:
+```
+cd test_ws/
+source ./install/local_setup.bash   (rosfoxy)
 ros2 run test_nodes mc_test_00
 ros2 run test_nodes mc_test_01
 ros2 run test_nodes mc_test_02 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_02_waypoint.yaml
+ros2 run test_nodes yolo_test_01
 ```
 
 - mc_test_00: arming
 - mc_test_01: takeoff → land
 - mc_test_02: takeoff → N 2m → NE 2m → E 2m → home → land (사각 비행)
+- yolo_test_01: takeoff → gimbal control → ladder detection → land
 
 <br/>
 <br/>
