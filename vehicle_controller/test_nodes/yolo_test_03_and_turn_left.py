@@ -183,8 +183,16 @@ class VehicleController(Node):
     
     def main_timer_callback(self):
         if self.phase == 0:
+            if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LOITER:
+                self.publish_vehicle_command(
+                    VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
+                    param1=1.0, # main mode
+                    param2=6.0  # offboard
+                )
+                self.phase = 0.3
+        if self.phase == 0.3:
             self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
-            self.current_goal = np.array([(10.0)*math.cos(self.yaw), (10.0)*math.sin(self.yaw), 0.0])
+            self.current_goal = np.array([(10.0)*math.cos(self.yaw), (10.0)*math.sin(self.yaw), -5.0])
             self.phase = 0.5
         elif self.phase == 0.5:
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
@@ -200,9 +208,9 @@ class VehicleController(Node):
                 self.phase = 1.5
         elif self.phase == 1.5:
             if self.obstacle_orientation == 'left':
-                self.current_goal = self.pos + np.array([(3.0)*math.cos(self.yaw-(math.pi/2)), (3.0)*math.sin(self.yaw-(math.pi/2)), 0.0])
+                self.current_goal = self.pos + np.array([(3.0)*math.cos(self.yaw+(math.pi/2)), (3.0)*math.sin(self.yaw+(math.pi/2)), -5.0])
             else: # right
-                self.current_goal = self.pos + np.array([(3.0)*math.cos(self.yaw+(math.pi/2)), (3.0)*math.sin(self.yaw+(math.pi/2)), 0.0])
+                self.current_goal = self.pos + np.array([(3.0)*math.cos(self.yaw-(math.pi/2)), (3.0)*math.sin(self.yaw-(math.pi/2)), -5.0])
             self.time_checker = 0
             self.phase = 2
         elif self.phase == 2:

@@ -74,11 +74,19 @@ class VehicleController(Node):
         self.vehicle_local_position = VehicleLocalPosition()
         self.home_position = np.array([0.0, 0.0, 0.0])
         self.pos = np.array([0.0, 0.0, 0.0])
+        self.yaw = 0.0
         
         self.previous_goal = None
         self.current_goal = None
 
         self.time_checker = 0
+        self.step_count = 0
+
+        # add by chaewon
+        self.obstacle_label = ''
+        self.obstacle_x = 0
+        self.obstacle_y = 0
+        self.obstacle_orientation = ''
 
         """
         4. Create Subscribers
@@ -133,6 +141,23 @@ class VehicleController(Node):
     def land(self):
         self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
         self.phase = -2
+    
+    # 천천히 비행
+    def make_setpoint_list(self, start, finish, n):
+        self.step_count = 0
+        start = np.array(start)
+        finish = np.array(finish)
+        points = np.linspace(start, finish, num=n+1, endpoint=True)[1:]
+        return points.tolist()
+
+    def step_by_step(self, setpoints):
+        if self.step_count == len(setpoints):
+            pass
+        elif np.linalg.norm(self.pos - previous_goal) < self.mc_acceptance_radius:
+            self.step_count += 1
+        else:
+            previous_goal = setpoints[self.step_count]
+            self.publish_trajectory_setpoint(position_sp=previous_goal)
 
     """
     Callback functions for the timers
@@ -155,22 +180,21 @@ class VehicleController(Node):
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             self.home_position = self.pos # set home position
             self.phase = 0
-
-            msg = GimbalManagerSetManualControl()
-            msg.origin_sysid = 0
-            msg.origin_compid = 0
-            msg.pitch_rate = float('nan')
-            msg.yaw_rate = float('nan')
-            self.gimbal_publisher.publish(msg)
-
     
     def main_timer_callback(self):
         if self.phase == 0:
+            if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LOITER:
+                self.publish_vehicle_command(
+                    VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
+                    param1=1.0, # main mode
+                    param2=6.0  # offboard
+                )
+                self.phase = 0.3
+        if self.phase == 0.3:
             self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
-            self.current_goal = np.array([(5.0)*math.cos(self.yaw), (5.0)*math.sin(self.yaw), 0.0])
+            self.current_goal = np.array([(10.0)*math.cos(self.yaw), (10.0)*math.sin(self.yaw), -5.0])
             self.phase = 0.5
         elif self.phase ==0.5:
-            self.current_goal = np.array([(5.0)*math.cos(self.yaw), (5.0)*math.sin(self.yaw), 0.0])
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
             if self.obstacle_label == 'ladder':
                 self.phase = 1
@@ -197,6 +221,7 @@ class VehicleController(Node):
     def vehicle_local_position_callback(self, msg):
         self.vehicle_local_position = msg
         self.pos = np.array([msg.x, msg.y, msg.z])
+        self.yaw = msg.heading
         if self.phase != -1:
             # set position relative to the home position after takeoff
             self.pos = self.pos - self.home_position
@@ -254,7 +279,7 @@ class VehicleController(Node):
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
         # self.get_logger().info(f"Publishing position setpoints {setposition}")
-
+    
     def publish_gimbal_control(self, **kwargs) :
         msg = GimbalManagerSetManualControl()
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)

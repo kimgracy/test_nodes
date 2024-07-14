@@ -52,13 +52,13 @@ class YoloDetector(Node):
         os.makedirs(self.target_capture_folder, exist_ok=True)
         
         # timer for publishing target image
-        self.timer_period = 20.0  # seconds
+        self.timer_period = 10.0  # seconds
         self.last_capture_time = time.time()
         
         # create a subscriber for the v4l2 image topic
         self.subscription = self.create_subscription(
             Image,
-            '/camera/image_raw',
+            '/image_raw',
             self.image_callback,
             10)
 
@@ -97,7 +97,7 @@ class YoloDetector(Node):
 
 
         # check if it's time to publish target image
-        if (self.phase == '3') or True:
+        if (self.phase == '3'):
             current_time = time.time()
             if current_time - self.last_capture_time >= self.timer_period:
                 self.publish_target_image(frame)
@@ -105,7 +105,7 @@ class YoloDetector(Node):
 
 
         # display frame
-        cv2.imshow('YOLOv5 Detection', frame)
+        #cv2.imshow('YOLOv5 Detection', frame)
         
 
         '''
