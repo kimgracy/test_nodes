@@ -1,3 +1,5 @@
+# Just for debugging purposes
+
 __author__ = "Juyong Shin"
 __contact__ = "juyong3393@snu.ac.kr"
 
@@ -9,15 +11,10 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPo
 # import px4_msgs
 """msgs for subscription"""
 from px4_msgs.msg import VehicleStatus
-from px4_msgs.msg import VehicleLocalPosition
 """msgs for publishing"""
 from px4_msgs.msg import VehicleCommand
 from px4_msgs.msg import OffboardControlMode
-from px4_msgs.msg import TrajectorySetpoint
 from px4_msgs.msg import GimbalManagerSetManualControl
-
-from my_bboxes_msg.msg import VehiclePhase
-from my_bboxes_msg.msg import YoloObstacle # label, x, y
 
 # import math, numpy
 import math
@@ -45,43 +42,13 @@ class VehicleController(Node):
         self.acceptance_heading_angle = np.radians(0.5)
 
         """
-        2. Set waypoints
-        """
-        self.WP = [np.array([0.0, 0.0, 0.0])]
-        self.declare_parameters(
-            namespace='',
-            parameters=[
-                ('WP1', None),
-                ('WP2', None),
-                ('WP3', None),
-                ('WP4', None),
-            ])
-
-        for i in range(1, 5):
-            wp_position = self.get_parameter(f'WP{i}').value
-            self.WP.append(np.array(wp_position))
-
-        """
-        3. State variables
+        2. State variables
         """
         # phase description
-        # -2 : after flight
         # -1 : before flight
         # 0 : takeoff and arm
-        # i >= 1 : moving toward WP_i
         self.phase = -1
         self.vehicle_status = VehicleStatus()
-        self.vehicle_local_position = VehicleLocalPosition()
-        self.home_position = np.array([0.0, 0.0, 0.0])
-        self.pos = np.array([0.0, 0.0, 0.0])
-        self.yaw = float('nan')
-
-        self.previous_goal = None
-        self.current_goal = None
-
-        self.obstacle_label = ''
-        self.obstacle_x = 0.0
-        self.obstacle_y = 0.0
         
         self.gimbal_control = False
         self.gimbal_pitchangle = 0.0
@@ -93,12 +60,6 @@ class VehicleController(Node):
         self.vehicle_status_subscriber = self.create_subscription(
             VehicleStatus, '/fmu/out/vehicle_status', self.vehicle_status_callback, qos_profile
         )
-        self.vehicle_local_position_subscriber = self.create_subscription(
-            VehicleLocalPosition, '/fmu/out/vehicle_local_position', self.vehicle_local_position_callback, qos_profile
-        )
-        self.yolo_obstacle_subscriber = self.create_subscription(
-            YoloObstacle, '/yolo_obstacle', self.yolo_obstacle_callback, qos_profile
-        )
 
         """
         5. Create Publishers
@@ -109,36 +70,20 @@ class VehicleController(Node):
         self.offboard_control_mode_publisher = self.create_publisher(
             OffboardControlMode, '/fmu/in/offboard_control_mode', qos_profile
         )
-        self.trajectory_setpoint_publisher = self.create_publisher(
-            TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile
-        )
         self.gimbal_publisher = self.create_publisher(
             GimbalManagerSetManualControl, '/fmu/in/gimbal_manager_set_manual_control', qos_profile
-        )
-        self.vehicle_phase_publisher = self.create_publisher(
-            VehiclePhase, '/vehicle_phase', qos_profile
         )
 
         """
         6. timer setup
         """
         self.offboard_heartbeat = self.create_timer(0.1, self.offboard_heartbeat_callback)
-        self.takeoff_timer = self.create_timer(0.5, self.takeoff_and_arm_callback)
+        self.arm_timer = self.create_timer(0.5, self.arm_callback)
         self.gimbal_timer = self.create_timer(0.5, self.gimbal_timer_callback)
-        self.vehicle_phase_publisher_timer = self.create_timer(0.5, self.vehicle_phase_publisher_callback)
         self.main_timer = self.create_timer(0.5, self.main_timer_callback)
-        
+
         print("Successfully executed: vehicle_controller")
         print("Please switch to offboard mode.")
-        
-    
-    """
-    Services
-    """   
-    def land(self):
-        self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
-        self.gimbal_control = False
-        self.phase = -2
 
     """
     Callback functions for the timers
@@ -146,14 +91,12 @@ class VehicleController(Node):
     def offboard_heartbeat_callback(self):
         """offboard heartbeat signal"""
         self.publish_offboard_control_mode(position=True)
-
-    def takeoff_and_arm_callback(self):
+        
+    def arm_callback(self):
         if self.phase == -1 and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-            print("Takeoff and arm")
+            print("Arm")
             # takeoff and arm only if the vehicle is in offboard mode by RC switch
-            self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_TAKEOFF)
-            self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
-            self.home_position = self.pos # set home position
+            # self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             self.phase = 0
 
     def gimbal_timer_callback(self):
@@ -171,29 +114,11 @@ class VehicleController(Node):
             msg.yaw_rate = float('nan')
             self.gimbal_publisher.publish(msg)
 
-    def vehicle_phase_publisher_callback(self):
-        msg = VehiclePhase()
-        msg.phase = str(self.phase)
-        self.vehicle_phase_publisher.publish(msg)
-    
     def main_timer_callback(self):
         if self.phase == 0:
-            if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LOITER:
-                self.publish_vehicle_command(
-                    VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
-                    param1=1.0, # main mode
-                    param2=6.0  # offboard
-                )
-                self.phase = 0.5
-        elif self.phase == 0.5:
             self.gimbal_control = True
-            self.gimbal_pitchangle = -math.pi / 6
-            self.gimbal_yawangle = self.yaw
-            if self.obstacle_label == 'ladder':
-                self.phase = -2
-                print(self.obstacle_label)
-                print(f'{self.obstacle_label} detected at ({self.obstacle_x}, {self.obstacle_y}). Phase changed to {self.phase}. Land')
-                self.land()
+            self.gimbal_pitchangle = -math.pi/6
+            self.gimbal_yawangle = math.pi/2
         print(self.phase)
 
     """
@@ -202,20 +127,6 @@ class VehicleController(Node):
     def vehicle_status_callback(self, msg):
         """Callback function for vehicle_status topic subscriber."""
         self.vehicle_status = msg
-    
-    def vehicle_local_position_callback(self, msg):
-        self.vehicle_local_position = msg
-        self.pos = np.array([msg.x, msg.y, msg.z])
-        self.yaw = msg.heading
-        if self.phase != -1:
-            # set position relative to the home position after takeoff
-            self.pos = self.pos - self.home_position
-
-    # add by chaewon. size of picture is 640*480. x 320 기준으로 판단 
-    def yolo_obstacle_callback(self, msg):
-        self.obstacle_label = msg.label
-        self.obstacle_x = int(msg.x)
-        self.obstacle_y = int(msg.y)
 
     """
     Functions for publishing topics.
@@ -238,7 +149,7 @@ class VehicleController(Node):
         msg.from_external = True
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.vehicle_command_publisher.publish(msg)
-    
+
     def publish_offboard_control_mode(self, **kwargs):
         msg = OffboardControlMode()
         msg.position = kwargs.get("position", False)
@@ -250,16 +161,6 @@ class VehicleController(Node):
         msg.direct_actuator = kwargs.get("direct_actuator", False)
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.offboard_control_mode_publisher.publish(msg)
-    
-    def publish_trajectory_setpoint(self, **kwargs):
-        msg = TrajectorySetpoint()
-        # position setpoint is relative to the home position
-        msg.position = list( kwargs.get("position_sp", np.nan * np.zeros(3)) + self.home_position )
-        msg.velocity = list( kwargs.get("velocity_sp", np.nan * np.zeros(3)) )
-        msg.yaw = kwargs.get("yaw_sp", float('nan'))
-        msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
-        self.trajectory_setpoint_publisher.publish(msg)
-        # self.get_logger().info(f"Publishing position setpoints {setposition}")
     
 def main(args = None):
     rclpy.init(args=args)

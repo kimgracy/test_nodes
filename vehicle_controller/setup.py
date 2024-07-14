@@ -20,10 +20,12 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'obstacle_speaker = test_nodes.obstacle_speaker:main',
+            'gimbal_test = test_nodes.gimbal_test:main',
             'mc_test_00 = test_nodes.mc_test_00_arm:main',
             'mc_test_01 = test_nodes.mc_test_01_takeoff_and_land:main',
             'mc_test_02 = test_nodes.mc_test_02_mc_square:main',
-            'yolo_test_01 = test_nodes.yolo_test_01:main'
+            'yolo_test_01 = test_nodes.yolo_test_01:main',
         ],
     },
 )
