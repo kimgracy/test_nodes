@@ -193,7 +193,7 @@ class VehicleController(Node):
                     param2=6.0  # offboard
                 )
                 self.phase = 0.3
-        if self.phase == 0.3:
+        elif self.phase == 0.3:
             self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
             self.current_goal = np.array([(10.0)*math.cos(self.yaw), (10.0)*math.sin(self.yaw), -5.0])
             self.phase = 0.5

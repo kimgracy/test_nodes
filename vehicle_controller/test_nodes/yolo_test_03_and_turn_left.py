@@ -190,7 +190,7 @@ class VehicleController(Node):
                     param2=6.0  # offboard
                 )
                 self.phase = 0.3
-        if self.phase == 0.3:
+        elif self.phase == 0.3:
             self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
             self.current_goal = np.array([(10.0)*math.cos(self.yaw), (10.0)*math.sin(self.yaw), -5.0])
             self.phase = 0.5
@@ -208,17 +208,25 @@ class VehicleController(Node):
                 self.phase = 1.5
         elif self.phase == 1.5:
             if self.obstacle_orientation == 'left':
-                self.current_goal = self.pos + np.array([(3.0)*math.cos(self.yaw+(math.pi/2)), (3.0)*math.sin(self.yaw+(math.pi/2)), -5.0])
+                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw+(math.pi/2)), (5.0)*math.sin(self.yaw+(math.pi/2)), 0.0])
             else: # right
-                self.current_goal = self.pos + np.array([(3.0)*math.cos(self.yaw-(math.pi/2)), (3.0)*math.sin(self.yaw-(math.pi/2)), -5.0])
+                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw-(math.pi/2)), (5.0)*math.sin(self.yaw-(math.pi/2)), 0.0])
             self.time_checker = 0
             self.phase = 2
         elif self.phase == 2:
             self.publish_trajectory_setpoint(position_sp = self.current_goal)
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
-                self.phase = 3
+                self.phase = 2.5
+        elif self.phase == 2.5:
+            self.current_goal = self.pos + np.array([(7.0)*math.cos(self.yaw), (7.0)*math.sin(self.yaw), 0.0])
+            self.phase = 3
         elif self.phase == 3:
+            self.publish_trajectory_setpoint(position_sp=self.pos)
+            distance = np.linalg.norm(self.pos - self.current_goal)
+            if distance < self.mc_acceptance_radius:
+                self.phase = 4
+        elif self.phase == 4:
             self.land()
         print(self.phase)
 
