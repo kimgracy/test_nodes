@@ -131,7 +131,7 @@ class VehicleController(Node):
         """
         self.offboard_heartbeat = self.create_timer(0.1, self.offboard_heartbeat_callback)
         self.takeoff_timer = self.create_timer(0.5, self.takeoff_and_arm_callback)
-        self.main_timer = self.create_timer(0.5, self.main_timer_callback)
+        self.main_timer = self.create_timer(0.05, self.main_timer_callback)
         # add by chaewon
         self.vehicle_phase_publisher_timer = self.create_timer(0.5, self.vehicle_phase_publisher_callback)
         
@@ -150,7 +150,7 @@ class VehicleController(Node):
     def make_setpoint_list(self, start, finish, v=2.3):
         start = np.array(start)
         finish = np.array(finish)
-        n = int(np.linalg.norm(finish - start) // (v/2))
+        n = int(np.linalg.norm(finish - start) // (v*0.05))
         # N등분점 생성 + 점 하나 추가
         points = np.linspace(start, finish, num=n+1, endpoint=True)[1:]
         last_point = points[-1] + (points[-1] - points[-2])
@@ -232,7 +232,7 @@ class VehicleController(Node):
 
     def offboard_heartbeat_callback(self):
         """offboard heartbeat signal"""
-        self.publish_offboard_control_mode(position=True)
+        self.publish_offboard_control_mode(position=True, velocity=True)
 
     def takeoff_and_arm_callback(self):
         if self.phase == -1 and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
@@ -259,7 +259,7 @@ class VehicleController(Node):
             self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 2.3)
             self.phase = 2
         elif self.phase == 2:
-            self.step_by_step2(self.setpoint_list, self.step_velocity)
+            self.step_by_step1(self.setpoint_list, self.step_velocity)
             if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
                 self.phase = 3
         elif self.phase == 3:
