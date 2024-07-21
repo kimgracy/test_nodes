@@ -226,7 +226,18 @@ class VehicleController(Node):
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
                 self.phase = 4
+        elif self.phase == 3.5:
+            if self.obstacle_orientation == 'left':
+                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw-(math.pi/2)), (5.0)*math.sin(self.yaw-(math.pi/2)), 0.0])
+            else: # right
+                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw+(math.pi/2)), (5.0)*math.sin(self.yaw+(math.pi/2)), 0.0])
+            self.phase = 4
         elif self.phase == 4:
+            self.publish_trajectory_setpoint(position_sp = self.current_goal)
+            distance = np.linalg.norm(self.pos - self.current_goal)
+            if distance < self.mc_acceptance_radius:
+                self.phase = 5
+        elif self.phase == 5:
             self.land()
         print(self.phase)
 

@@ -1,4 +1,6 @@
 from setuptools import setup
+import os
+from glob import glob
 
 package_name = 'test_nodes'
 
@@ -31,6 +33,7 @@ setup(
             'yolo_test_02 = test_nodes.yolo_test_02_go_straight:main',
             'yolo_test_03 = test_nodes.yolo_test_03_and_turn_left:main',
             'yolo_test_04 = test_nodes.yolo_test_04_gimbal:main',
+            'yolo_test_05 = test_nodes.yolo_test_05_yolo_apriltag:main',
         ],
     },
 )

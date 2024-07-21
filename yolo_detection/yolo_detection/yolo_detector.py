@@ -84,7 +84,7 @@ class YoloDetector(Node):
                 y_center = (y1 + y2) / 2
                 
                 # publish obstacle message
-                if (self.phase == '8' or '8.1' or '8.2' or '8.3' or '8.4') or True:
+                if ((self.phase == '8' or '8.1' or '8.2' or '8.3' or '8.4') and (abs(y1-y2) >= 450)) or True:
                     obstacle_msg = YoloObstacle()
                     obstacle_msg.label = label
                     obstacle_msg.x = x_center
