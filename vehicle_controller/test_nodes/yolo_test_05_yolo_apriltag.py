@@ -90,7 +90,6 @@ class VehicleController(Node):
         self.obstacle_x = 0
         self.obstacle_y = 0
         self.obstacle_orientation = ''
-        self.left_or_right = 0
 
         """
         4. Create Subscribers
