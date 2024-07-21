@@ -261,11 +261,7 @@ class VehicleController(Node):
             if distance < self.mc_acceptance_radius:
                 self.phase = 4
         elif self.phase == 3.5:
-<<<<<<< HEAD
             if self.left_or_right < 0: # left
-=======
-            if self.obstacle_orientation == 'left':
->>>>>>> 67c77a1d12548996e32adee55834b6900ca24641
                 self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw-(math.pi/2)), (5.0)*math.sin(self.yaw-(math.pi/2)), 0.0])
             else: # right
                 self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw+(math.pi/2)), (5.0)*math.sin(self.yaw+(math.pi/2)), 0.0])
