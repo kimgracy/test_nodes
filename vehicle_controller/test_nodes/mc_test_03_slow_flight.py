@@ -147,7 +147,7 @@ class VehicleController(Node):
         self.phase = -2
     
     # 천천히 비행
-    def make_setpoint_list(self, start, finish, v=2.3):
+    def make_setpoint_list(self, start, finish, v):
         start = np.array(start)
         finish = np.array(finish)
         n = int(np.linalg.norm(finish - start) // (v*0.05))
@@ -162,18 +162,19 @@ class VehicleController(Node):
         print(velocity)
         return [list(point) for point in points], velocity
 
+    '''
     def step_by_step1(self, setpoints, velocity):
         if self.step_count == len(setpoints)-1:
             previous_goal = np.array(setpoints[self.step_count-1])
             self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array([0.0, 0.0, 0.0]))
-            print(f'stop at point {self.step_count}')
+            #print(f'stop at point {self.step_count}')
         elif self.step_count == len(setpoints)-2:
             self.step_count += 1
             a = 0.5
             velocity = np.array(velocity) * a
             previous_goal = np.array(setpoints[self.step_count-1])
             self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=velocity)
-            print(f'stop at point {self.step_count}')
+            #print(f'stop at point {self.step_count}')
         elif self.step_count == len(setpoints)-3:
             self.step_count += 1
             a = 0.7
@@ -186,40 +187,24 @@ class VehicleController(Node):
             previous_goal = np.array(setpoints[self.step_count])
             self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array(velocity))
             print(f'going to point {self.step_count}')
-    
-    def step_by_step2(self, setpoints, velocity):
-        if self.step_count == len(setpoints)-1:
-            previous_goal = np.array(setpoints[self.step_count-1])
+    '''
+
+    def step_by_step(self, setpoints, velocity):
+        if math.floor(self.step_count) == len(setpoints)-1:
+            previous_goal = np.array(setpoints[-2])
             self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array([0.0, 0.0, 0.0]))
-            print(f'stop at point {self.step_count}')
-        elif self.step_count == len(setpoints)-2:
-            self.step_count += 1
-            a = 0.5
+            #print(f'finish at point {self.step_count}')
+        elif math.floor(self.step_count) >= len(setpoints)-int(3/0.05):
+            self.step_count += 0.5
+            a = float(1-(self.step_count-(len(setpoints)-int(3/0.05)))*0.05/3)
             velocity = np.array(velocity) * a
-            previous_goal = np.array(setpoints[self.step_count-1])
-            self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=velocity)
-            print(f'stop at point {self.step_count}')
-        elif self.step_count == len(setpoints)-3:
-            self.step_count += 1
-            a = 0.7
-            velocity = np.array(velocity) * a
-            previous_goal = np.array(setpoints[self.step_count-1])
-            self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=velocity)
-            print(f'stop at point {self.step_count}')
-        elif (self.step_count >= len(setpoints)-5) or (self.step_count <= 4):
-            self.step_count += 1
-            previous_goal = np.array(setpoints[self.step_count])
-            self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array(velocity))
-            print(f'going to point {self.step_count}')
-        elif np.linalg.norm(self.pos - np.array(setpoints[len(setpoints)-7])) < 2 * self.mc_acceptance_radius:
-            self.step_count = len(setpoints)-6
-            previous_goal = np.array(setpoints[self.step_count])
-            self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array(velocity))
+            self.publish_trajectory_setpoint(velocity_sp=velocity)
+            #print(f'stop at point {self.step_count}')
         else:
-            self.step_count = len(setpoints)-7
-            previous_goal = np.array(setpoints[self.step_count])
+            self.step_count += 1
+            previous_goal = np.array(setpoints[int(self.step_count)])
             self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array(velocity))
-            print(f'going to point {self.step_count}')
+            #print(f'going to point {self.step_count}')
 
     """
     Callback functions for the timers
@@ -255,17 +240,16 @@ class VehicleController(Node):
         elif self.phase == 1:
             self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
             self.start_point = self.pos
-            self.current_goal = np.array([(50.0)*math.cos(self.yaw), (50.0)*math.sin(self.yaw), -5.0])
-            self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 2.3)
+            self.current_goal = np.array([(15.0)*math.cos(self.yaw), (15.0)*math.sin(self.yaw), -5.0])
+            self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 1)
             self.phase = 2
         elif self.phase == 2:
-            self.step_by_step1(self.setpoint_list, self.step_velocity)
+            self.step_by_step(self.setpoint_list, self.step_velocity)
             if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
                 self.phase = 3
         elif self.phase == 3:
             self.land()
         print(self.phase)
-        print(self.pos)
 
     """
     Callback functions for subscribers.

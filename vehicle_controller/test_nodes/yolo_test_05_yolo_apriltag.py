@@ -18,6 +18,9 @@ from px4_msgs.msg import GimbalManagerSetManualControl
 # add by chaewon
 from my_bboxes_msg.msg import VehiclePhase
 from my_bboxes_msg.msg import YoloObstacle # label, x, y
+# add by jintae
+from std_msgs.msg import Bool # for precision landing
+
 
 # import math, numpy
 import math
@@ -122,6 +125,10 @@ class VehicleController(Node):
         self.vehicle_phase_publisher = self.create_publisher(
             VehiclePhase, '/vehicle_phase', qos_profile
         )
+        # add by jintae
+        self.autolanding_publisher = self.create_publisher(
+            Bool, 'auto_land_on', 10
+        )
 
         """
         6. timer setup
@@ -191,7 +198,6 @@ class VehicleController(Node):
                     param2=6.0  # offboard
                 )
                 self.phase = 0.3
-
         elif self.phase == 0.3:
             self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
             self.current_goal = np.array([(10.0)*math.cos(self.yaw), (10.0)*math.sin(self.yaw), -5.0])
@@ -272,7 +278,10 @@ class VehicleController(Node):
             if distance < self.mc_acceptance_radius:
                 self.phase = 5
         elif self.phase == 5:
-            self.land()
+             # add by jintae
+            ALmsg = Bool()
+            ALmsg.data = True
+            self.autolanding_publisher.publish(ALmsg) #auto landing on
         print(self.phase)
 
     """

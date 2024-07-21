@@ -14,10 +14,6 @@ from px4_msgs.msg import VehicleLocalPosition
 from px4_msgs.msg import VehicleCommand
 from px4_msgs.msg import OffboardControlMode
 from px4_msgs.msg import TrajectorySetpoint
-from px4_msgs.msg import GimbalManagerSetManualControl
-# add by chaewon
-from my_bboxes_msg.msg import VehiclePhase
-from my_bboxes_msg.msg import YoloObstacle # label, x, y
 
 # import math, numpy
 import math
@@ -74,20 +70,17 @@ class VehicleController(Node):
         self.vehicle_local_position = VehicleLocalPosition()
         self.home_position = np.array([0.0, 0.0, 0.0])
         self.pos = np.array([0.0, 0.0, 0.0])
-        self.yaw = 0.0
         
         self.previous_goal = None
         self.current_goal = None
 
-        self.time_checker = 0
+        # add by chaewon. used for step by step function
+        self.start_point = None
+        self.setpoint_list = []
+        self.step_velocity = 0.0
         self.step_count = 0
 
-        # add by chaewon
-        self.obstacle_label = ''
-        self.obstacle_x = 0
-        self.obstacle_y = 0
-        self.obstacle_orientation = ''
-        self.left_or_right = 0
+        self.time_checker = 0
 
         """
         4. Create Subscribers
@@ -97,10 +90,6 @@ class VehicleController(Node):
         )
         self.vehicle_local_position_subscriber = self.create_subscription(
             VehicleLocalPosition, '/fmu/out/vehicle_local_position', self.vehicle_local_position_callback, qos_profile
-        )
-        # add by chaewon
-        self.yolo_obstacle_subscriber = self.create_subscription(
-            YoloObstacle, '/yolo_obstacle', self.yolo_obstacle_callback, qos_profile
         )
 
         """
@@ -115,13 +104,6 @@ class VehicleController(Node):
         self.trajectory_setpoint_publisher = self.create_publisher(
             TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile
         )
-        self.gimbal_publisher = self.create_publisher(
-            GimbalManagerSetManualControl, '/fmu/in/gimbal_manager_set_manual_control', qos_profile
-        )
-        # add by chaewon.
-        self.vehicle_phase_publisher = self.create_publisher(
-            VehiclePhase, '/vehicle_phase', qos_profile
-        )
 
         """
         6. timer setup
@@ -129,8 +111,6 @@ class VehicleController(Node):
         self.offboard_heartbeat = self.create_timer(0.1, self.offboard_heartbeat_callback)
         self.takeoff_timer = self.create_timer(0.5, self.takeoff_and_arm_callback)
         self.main_timer = self.create_timer(0.5, self.main_timer_callback)
-        # add by chaewon
-        self.vehicle_phase_publisher_timer = self.create_timer(0.5, self.vehicle_phase_publisher_callback)
         
         print("Successfully executed: vehicle_controller")
         print("Please switch to offboard mode.")
@@ -144,34 +124,44 @@ class VehicleController(Node):
         self.phase = -2
     
     # 천천히 비행
-    def make_setpoint_list(self, start, finish, n):
-        self.step_count = 0
+    def make_setpoint_list(self, start, finish, v):
         start = np.array(start)
         finish = np.array(finish)
+        n = int(np.linalg.norm(finish - start) // (v*0.05))
+        # N등분점 생성 + 점 하나 추가
         points = np.linspace(start, finish, num=n+1, endpoint=True)[1:]
-        return points.tolist()
-
-    def step_by_step(self, setpoints):
-        if self.step_count == len(setpoints):
-            pass
-        elif np.linalg.norm(self.pos - previous_goal) < self.mc_acceptance_radius:
-            self.step_count += 1
+        last_point = points[-1] + (points[-1] - points[-2])
+        points = np.append(points, [last_point], axis=0)
+        # 속도 벡터 생성
+        velocity = list(v * (finish - start) / np.linalg.norm(finish - start))
+        print([list(point) for point in points])
+        print(n)
+        print(velocity)
+        return [list(point) for point in points], velocity
+    
+    def step_by_step(self, setpoints, velocity):
+        if math.floor(self.step_count) == len(setpoints)-1:
+            previous_goal = np.array(setpoints[-2])
+            self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array([0.0, 0.0, 0.0]))
+            #print(f'finish at point {self.step_count}')
+        elif math.floor(self.step_count) >= len(setpoints)-int(3/0.05):
+            self.step_count += 0.5
+            a = float(1-(self.step_count-(len(setpoints)-int(3/0.05)))*0.05/3)
+            velocity = np.array(velocity) * a
+            self.publish_trajectory_setpoint(velocity_sp=velocity)
+            #print(f'stop at point {self.step_count}')
         else:
-            previous_goal = setpoints[self.step_count]
-            self.publish_trajectory_setpoint(position_sp=previous_goal)
+            self.step_count += 1
+            previous_goal = np.array(setpoints[int(self.step_count)])
+            self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array(velocity))
+            #print(f'going to point {self.step_count}')
 
     """
     Callback functions for the timers
     """
-    # add by chaewon
-    def vehicle_phase_publisher_callback(self):
-        msg = VehiclePhase()
-        msg.phase = str(self.phase)
-        self.vehicle_phase_publisher.publish(msg)
-
     def offboard_heartbeat_callback(self):
         """offboard heartbeat signal"""
-        self.publish_offboard_control_mode(position=True)
+        self.publish_offboard_control_mode(position=True, velocity=True)
 
     def takeoff_and_arm_callback(self):
         if self.phase == -1 and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
@@ -190,89 +180,30 @@ class VehicleController(Node):
                     param1=1.0, # main mode
                     param2=6.0  # offboard
                 )
-                self.phase = 0.3
-
-        elif self.phase == 0.3:
-            self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
-            self.current_goal = np.array([(10.0)*math.cos(self.yaw), (10.0)*math.sin(self.yaw), -5.0])
-            self.phase = 0.5
-
+                self.phase = 0.5
         elif self.phase == 0.5:
-            self.publish_trajectory_setpoint(position_sp=self.current_goal)
-
-            # Check for the first detection of ladder-truck
-            if not self.first_ladder_detected and self.obstacle_label == 'ladder-truck':
-                self.first_ladder_detected = True
-                print('First detection of ladder-truck.')
-
-            # Start counting attempts only after the first detection
-            if self.first_ladder_detected:
-                if self.ladder_detect_attempts < 5:
-                    self.ladder_detect_attempts += 1
-
-                    if self.obstacle_label == 'ladder-truck':
-                        print(f'Detected obstacle: {self.obstacle_label}')
-                        self.ladder_detected += 1
-                    else:
-                        print(f'Detected obstacle: {self.obstacle_label}')
-
-                if self.ladder_detect_attempts >= 5:
-                    if self.ladder_detected >= 3:
-                        print('Ladder-truck detected. Changing phase to 1.')
-                        self.phase = 1
-                        self.time_checker = 0
-                    else:
-                        print('Ladder-truck not sufficiently detected. Resetting attempts.')
-                        self.ladder_detect_attempts = 0
-                        self.ladder_detected = 0
-                        self.first_ladder_detected = False
-
-        elif self.phase == 1:
-            self.publish_trajectory_setpoint(position_sp=self.pos)
-            print(f'Direction of obstacle: {self.obstacle_orientation}')
-            self.time_checker += 1
-
-            if self.obstacle_orientation == 'left':
-                self.left_or_right -= 1
-            else: # right
-                self.left_or_right += 1
-
-            if self.time_checker >= 12:
-                self.time_checker = 0
-                self.phase = 1.5
-        elif self.phase == 1.5:
-            if self.left_or_right < 0: # left
-                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw+(math.pi/2)), (5.0)*math.sin(self.yaw+(math.pi/2)), 0.0])
-            else: # right
-                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw-(math.pi/2)), (5.0)*math.sin(self.yaw-(math.pi/2)), 0.0])
-            self.time_checker = 0
-            self.phase = 2
-        elif self.phase == 2:
-            self.publish_trajectory_setpoint(position_sp = self.current_goal)
+            self.start_point = self.pos
+            self.current_goal = self.WP[1]
+            self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 1)
+            self.phase = 1
+        elif self.phase >= 1:
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
-                self.phase = 2.5
-        elif self.phase == 2.5:
-            self.current_goal = self.pos + np.array([(7.0)*math.cos(self.yaw), (7.0)*math.sin(self.yaw), 0.0])
-            self.phase = 3
-        elif self.phase == 3:
-            self.publish_trajectory_setpoint(position_sp=self.pos)
-            distance = np.linalg.norm(self.pos - self.current_goal)
-            if distance < self.mc_acceptance_radius:
-                self.phase = 4
-        elif self.phase == 3.5:
-            if self.left_or_right < 0: # left
-                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw-(math.pi/2)), (5.0)*math.sin(self.yaw-(math.pi/2)), 0.0])
-            else: # right
-                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw+(math.pi/2)), (5.0)*math.sin(self.yaw+(math.pi/2)), 0.0])
-            self.phase = 4
-        elif self.phase == 4:
-            self.publish_trajectory_setpoint(position_sp = self.current_goal)
-            distance = np.linalg.norm(self.pos - self.current_goal)
-            if distance < self.mc_acceptance_radius:
-                self.phase = 5
-        elif self.phase == 5:
-            self.land()
+                if self.phase == 4:
+                    self.land()
+                    self.phase = -2
+                elif self.phase - math.floor(self.phase) != 0:
+                    self.start_point = self.pos
+                    self.current_goal = self.WP[int(math.floor(self.phase)) + 1]
+                    self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 1)
+                    self.phase += 0.5
+                else:
+                    self.previous_goal = self.current_goal
+                    self.current_goal = self.WP[self.phase + 1]
+                    self.publish_trajectory_setpoint(position_sp=self.current_goal)
+                    self.phase += 0.5
+            else:
+                self.step_by_step(self.setpoint_list, self.step_velocity)
         print(self.phase)
 
     """
@@ -285,20 +216,9 @@ class VehicleController(Node):
     def vehicle_local_position_callback(self, msg):
         self.vehicle_local_position = msg
         self.pos = np.array([msg.x, msg.y, msg.z])
-        self.yaw = msg.heading
         if self.phase != -1:
             # set position relative to the home position after takeoff
             self.pos = self.pos - self.home_position
-    
-    # add by chaewon. size of picture is 640*480. x 320 기준으로 판단 
-    def yolo_obstacle_callback(self, msg):
-        self.obstacle_label = msg.label
-        self.obstacle_x = int(msg.x)
-        self.obstacle_y = int(msg.y)
-        if self.obstacle_x < 320:
-            self.obstacle_orientation = 'left'
-        else:
-            self.obstacle_orientation = 'right'
 
     """
     Functions for publishing topics.
@@ -343,20 +263,6 @@ class VehicleController(Node):
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
         # self.get_logger().info(f"Publishing position setpoints {setposition}")
-    
-    def publish_gimbal_control(self, **kwargs) :
-        msg = GimbalManagerSetManualControl()
-        msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
-        msg.origin_sysid = 0
-        msg.origin_compid = 0
-        msg.flags = GimbalManagerSetManualControl.GIMBAL_MANAGER_FLAGS_ROLL_LOCK \
-                    + GimbalManagerSetManualControl.GIMBAL_MANAGER_FLAGS_PITCH_LOCK \
-                    + GimbalManagerSetManualControl.GIMBAL_MANAGER_FLAGS_YAW_LOCK
-        msg.pitch = kwargs.get("pitch", float('nan'))
-        msg.yaw = kwargs.get("yaw", float('nan'))
-        msg.pitch_rate = float('nan')
-        msg.yaw_rate = float('nan')
-        self.gimbal_publisher.publish(msg)
     
 def main(args = None):
     rclpy.init(args=args)
