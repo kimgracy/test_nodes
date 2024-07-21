@@ -105,7 +105,7 @@ class YoloDetector(Node):
 
 
         # display frame
-        cv2.imshow('YOLOv5 Detection', frame)
+        #cv2.imshow('YOLOv5 Detection', frame)
         
 
         '''

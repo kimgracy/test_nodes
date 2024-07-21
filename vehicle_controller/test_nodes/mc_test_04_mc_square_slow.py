@@ -110,7 +110,7 @@ class VehicleController(Node):
         """
         self.offboard_heartbeat = self.create_timer(0.1, self.offboard_heartbeat_callback)
         self.takeoff_timer = self.create_timer(0.5, self.takeoff_and_arm_callback)
-        self.main_timer = self.create_timer(0.5, self.main_timer_callback)
+        self.main_timer = self.create_timer(0.05, self.main_timer_callback)
         
         print("Successfully executed: vehicle_controller")
         print("Please switch to offboard mode.")
@@ -144,9 +144,9 @@ class VehicleController(Node):
             previous_goal = np.array(setpoints[-2])
             self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array([0.0, 0.0, 0.0]))
             #print(f'finish at point {self.step_count}')
-        elif math.floor(self.step_count) >= len(setpoints)-int(3/0.05):
+        elif math.floor(self.step_count) >= len(setpoints)-int(1/0.05):
             self.step_count += 0.5
-            a = float(1-(self.step_count-(len(setpoints)-int(3/0.05)))*0.05/3)
+            a = float(1-(self.step_count-(len(setpoints)-int(1/0.05)))*0.05/1)
             velocity = np.array(velocity) * a
             self.publish_trajectory_setpoint(velocity_sp=velocity)
             #print(f'stop at point {self.step_count}')
@@ -183,9 +183,41 @@ class VehicleController(Node):
                 self.phase = 0.5
         elif self.phase == 0.5:
             self.start_point = self.pos
-            self.current_goal = np.array(self.WP[1])
-            self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 1)
+            self.current_goal = np.array([2.0, 0.0, -5.0])
+            self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 0.5)
             self.phase = 1
+        elif self.phase == 1:
+            self.step_by_step(self.setpoint_list, self.step_velocity)
+            distance = np.linalg.norm(self.pos - self.current_goal)
+            if distance < self.mc_acceptance_radius:
+                self.start_point = self.pos
+                self.current_goal = np.array([2.0, 2.0, -5.0])
+                self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 0.5)
+                self.phase = 2
+        elif self.phase == 2:
+            self.step_by_step(self.setpoint_list, self.step_velocity)
+            distance = np.linalg.norm(self.pos - self.current_goal)
+            if distance < self.mc_acceptance_radius:
+                self.start_point = self.pos
+                self.current_goal = np.array([0.0, 2.0, -5.0])
+                self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 0.5)
+                self.phase = 3
+        elif self.phase == 3:
+            self.step_by_step(self.setpoint_list, self.step_velocity)
+            distance = np.linalg.norm(self.pos - self.current_goal)
+            if distance < self.mc_acceptance_radius:
+                self.start_point = self.pos
+                self.current_goal = np.array([0.0, 0.0, -5.0])
+                self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 0.5)
+                self.phase = 4
+        elif self.phase == 4:
+            self.step_by_step(self.setpoint_list, self.step_velocity)
+            distance = np.linalg.norm(self.pos - self.current_goal)
+            if distance < self.mc_acceptance_radius:
+                self.land()
+                self.phase = -2
+
+        '''
         elif self.phase >= 1:
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
@@ -204,6 +236,8 @@ class VehicleController(Node):
                     self.phase += 0.5
             else:
                 self.step_by_step(self.setpoint_list, self.step_velocity)
+        '''
+        print(self.pos)
         print(self.phase)
 
     """
