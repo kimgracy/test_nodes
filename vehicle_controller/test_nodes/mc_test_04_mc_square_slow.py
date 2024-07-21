@@ -183,7 +183,7 @@ class VehicleController(Node):
                 self.phase = 0.5
         elif self.phase == 0.5:
             self.start_point = self.pos
-            self.current_goal = self.WP[1]
+            self.current_goal = np.array(self.WP[1])
             self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 1)
             self.phase = 1
         elif self.phase >= 1:
