@@ -90,6 +90,13 @@ class VehicleController(Node):
         self.obstacle_x = 0
         self.obstacle_y = 0
         self.obstacle_orientation = ''
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        self.left_or_right = 0
+=======
+>>>>>>> 67c77a1d12548996e32adee55834b6900ca24641
+>>>>>>> 9bc72903783110a4a6bd7fba19ee6ec1795b3de3
 
         """
         4. Create Subscribers
@@ -201,6 +208,7 @@ class VehicleController(Node):
             self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
             self.current_goal = np.array([(10.0)*math.cos(self.yaw), (10.0)*math.sin(self.yaw), -5.0])
             self.phase = 0.5
+<<<<<<< HEAD
 
         elif self.phase == 0.5:
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
@@ -232,10 +240,18 @@ class VehicleController(Node):
                         self.ladder_detected = 0
                         self.first_ladder_detected = False
 
+=======
+        elif self.phase == 0.5:
+            self.publish_trajectory_setpoint(position_sp=self.current_goal)
+            if self.obstacle_label == 'ladder':
+                self.phase = 1
+                self.time_checker = 0
+>>>>>>> 67c77a1d12548996e32adee55834b6900ca24641
         elif self.phase == 1:
             self.publish_trajectory_setpoint(position_sp=self.pos)
             print(f'Direction of obstacle: {self.obstacle_orientation}')
             self.time_checker += 1
+<<<<<<< HEAD
 
             if self.obstacle_orientation == 'left':
                 self.left_or_right -= 1
@@ -247,6 +263,13 @@ class VehicleController(Node):
                 self.phase = 1.5
         elif self.phase == 1.5:
             if self.left_or_right < 0: # left
+=======
+            if  self.time_checker >= 12:
+                self.time_checker = 0
+                self.phase = 1.5
+        elif self.phase == 1.5:
+            if self.obstacle_orientation == 'left':
+>>>>>>> 67c77a1d12548996e32adee55834b6900ca24641
                 self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw+(math.pi/2)), (5.0)*math.sin(self.yaw+(math.pi/2)), 0.0])
             else: # right
                 self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw-(math.pi/2)), (5.0)*math.sin(self.yaw-(math.pi/2)), 0.0])
@@ -266,7 +289,11 @@ class VehicleController(Node):
             if distance < self.mc_acceptance_radius:
                 self.phase = 4
         elif self.phase == 3.5:
+<<<<<<< HEAD
             if self.left_or_right < 0: # left
+=======
+            if self.obstacle_orientation == 'left':
+>>>>>>> 67c77a1d12548996e32adee55834b6900ca24641
                 self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw-(math.pi/2)), (5.0)*math.sin(self.yaw-(math.pi/2)), 0.0])
             else: # right
                 self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw+(math.pi/2)), (5.0)*math.sin(self.yaw+(math.pi/2)), 0.0])
