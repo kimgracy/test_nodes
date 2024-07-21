@@ -93,6 +93,10 @@ class VehicleController(Node):
 
         self.left_or_right = 0
 
+        self.first_ladder_detected = False
+        self.ladder_detect_attempts = 0
+        self.ladder_detected = 0
+
 
         """
         4. Create Subscribers
@@ -265,10 +269,10 @@ class VehicleController(Node):
             self.current_goal = self.pos + np.array([(7.0)*math.cos(self.yaw), (7.0)*math.sin(self.yaw), 0.0])
             self.phase = 3
         elif self.phase == 3:
-            self.publish_trajectory_setpoint(position_sp=self.pos)
+            self.publish_trajectory_setpoint(position_sp=self.current_goal)
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
-                self.phase = 4
+                self.phase = 3.5
         elif self.phase == 3.5:
             if self.left_or_right < 0: # left
                 self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw-(math.pi/2)), (5.0)*math.sin(self.yaw-(math.pi/2)), 0.0])
