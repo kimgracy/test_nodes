@@ -88,6 +88,12 @@ class VehicleController(Node):
         self.obstacle_y = 0
         self.obstacle_orientation = ''
 
+        self.left_or_right = 0
+
+        self.first_ladder_detected = False
+        self.ladder_detect_attempts = 0
+        self.ladder_detected = 0
+
         """
         4. Create Subscribers
         """
@@ -190,35 +196,87 @@ class VehicleController(Node):
                     param2=6.0  # offboard
                 )
                 self.phase = 0.3
-        if self.phase == 0.3:
+
+        elif self.phase == 0.3:
             self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
             self.current_goal = np.array([(10.0)*math.cos(self.yaw), (10.0)*math.sin(self.yaw), -5.0])
             self.phase = 0.5
+
         elif self.phase == 0.5:
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
-            if self.obstacle_label == 'ladder':
-                self.phase = 1
-                self.time_checker = 0
+
+            # Check for the first detection of ladder-truck
+            if not self.first_ladder_detected and self.obstacle_label == 'ladder-truck':
+                self.first_ladder_detected = True
+                print('First detection of ladder-truck.')
+
+            # Start counting attempts only after the first detection
+            if self.first_ladder_detected:
+                if self.ladder_detect_attempts < 5:
+                    self.ladder_detect_attempts += 1
+
+                    if self.obstacle_label == 'ladder-truck':
+                        print(f'Detected obstacle: {self.obstacle_label}')
+                        self.ladder_detected += 1
+                    else:
+                        print(f'Detected obstacle: {self.obstacle_label}')
+
+                if self.ladder_detect_attempts >= 5:
+                    if self.ladder_detected >= 3:
+                        print('Ladder-truck detected. Changing phase to 1.')
+                        self.phase = 1
+                        self.time_checker = 0
+                    else:
+                        print('Ladder-truck not sufficiently detected. Resetting attempts.')
+                        self.ladder_detect_attempts = 0
+                        self.ladder_detected = 0
+                        self.first_ladder_detected = False
+
         elif self.phase == 1:
             self.publish_trajectory_setpoint(position_sp=self.pos)
             print(f'Direction of obstacle: {self.obstacle_orientation}')
             self.time_checker += 1
-            if  self.time_checker >= 12:
+
+            if self.obstacle_orientation == 'left':
+                self.left_or_right -= 1
+            else: # right
+                self.left_or_right += 1
+
+            if self.time_checker >= 12:
                 self.time_checker = 0
                 self.phase = 1.5
         elif self.phase == 1.5:
-            if self.obstacle_orientation == 'left':
-                self.current_goal = self.pos + np.array([(3.0)*math.cos(self.yaw+(math.pi/2)), (3.0)*math.sin(self.yaw+(math.pi/2)), -5.0])
+            if self.left_or_right < 0: # left
+                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw+(math.pi/2)), (5.0)*math.sin(self.yaw+(math.pi/2)), 0.0])
             else: # right
-                self.current_goal = self.pos + np.array([(3.0)*math.cos(self.yaw-(math.pi/2)), (3.0)*math.sin(self.yaw-(math.pi/2)), -5.0])
+                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw-(math.pi/2)), (5.0)*math.sin(self.yaw-(math.pi/2)), 0.0])
             self.time_checker = 0
             self.phase = 2
         elif self.phase == 2:
             self.publish_trajectory_setpoint(position_sp = self.current_goal)
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
-                self.phase = 3
+                self.phase = 2.5
+        elif self.phase == 2.5:
+            self.current_goal = self.pos + np.array([(7.0)*math.cos(self.yaw), (7.0)*math.sin(self.yaw), 0.0])
+            self.phase = 3
         elif self.phase == 3:
+            self.publish_trajectory_setpoint(position_sp=self.current_goal)
+            distance = np.linalg.norm(self.pos - self.current_goal)
+            if distance < self.mc_acceptance_radius:
+                self.phase = 3.5
+        elif self.phase == 3.5:
+            if self.left_or_right < 0: # left
+                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw-(math.pi/2)), (5.0)*math.sin(self.yaw-(math.pi/2)), 0.0])
+            else: # right
+                self.current_goal = self.pos + np.array([(5.0)*math.cos(self.yaw+(math.pi/2)), (5.0)*math.sin(self.yaw+(math.pi/2)), 0.0])
+            self.phase = 4
+        elif self.phase == 4:
+            self.publish_trajectory_setpoint(position_sp = self.current_goal)
+            distance = np.linalg.norm(self.pos - self.current_goal)
+            if distance < self.mc_acceptance_radius:
+                self.phase = 5
+        elif self.phase == 5:
             self.land()
         print(self.phase)
 

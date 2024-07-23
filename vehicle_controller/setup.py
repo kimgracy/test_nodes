@@ -1,4 +1,6 @@
 from setuptools import setup
+import os
+from glob import glob
 
 package_name = 'test_nodes'
 
@@ -10,6 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name), glob('launch/*.launch.py')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -25,10 +28,13 @@ setup(
             'mc_test_00 = test_nodes.mc_test_00_arm:main',
             'mc_test_01 = test_nodes.mc_test_01_takeoff_and_land:main',
             'mc_test_02 = test_nodes.mc_test_02_mc_square:main',
+            'mc_test_03 = test_nodes.mc_test_03_slow_flight:main',
+            'mc_test_04 = test_nodes.mc_test_04_mc_square_slow:main',
             'yolo_test_01 = test_nodes.yolo_test_01:main',
             'yolo_test_02 = test_nodes.yolo_test_02_go_straight:main',
             'yolo_test_03 = test_nodes.yolo_test_03_and_turn_left:main',
             'yolo_test_04 = test_nodes.yolo_test_04_gimbal:main',
+            'yolo_test_05 = test_nodes.yolo_test_05_yolo_apriltag:main',
         ],
     },
 )
