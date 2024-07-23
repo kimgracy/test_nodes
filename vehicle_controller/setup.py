@@ -35,6 +35,7 @@ setup(
             'yolo_test_03 = test_nodes.yolo_test_03_and_turn_left:main',
             'yolo_test_04 = test_nodes.yolo_test_04_gimbal:main',
             'yolo_test_05 = test_nodes.yolo_test_05_yolo_apriltag:main',
+            'yolo_test_06 = test_nodes.yolo_test_06_yolo_slow:main',
         ],
     },
 )
