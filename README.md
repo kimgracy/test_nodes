@@ -172,6 +172,9 @@
    v4l2-ctl -d /dev/video0 --set-fmt-video=width=640,height=480   # change settings
    ```
 
+(Optional) Auto Landing
+Auto landing을 사용할 사람들은 notion에 적힌 apriltag download를 참고하여 apriltag를 깔아줘야 한다. 사용하지 않는 사람들은 **auto_landing directory를 그냥 지워주자.**
+
 # Build
 
 - 아래와 같이 my_bboxes_msg를 먼저 build하고 나머지 패키지를 build해야 오류가 생기지 않는다.
@@ -273,6 +276,7 @@ ros2 run test_nodes yolo_test_03
 - yolo_test_01: takeoff → gimbal control → ladder detection → land
 - yolo_test_02: takeoff → gimbal control → heading 방향으로 5m → 가다가 ladder detect 시 stop → land
 - yolo_test_03: takeoff → gimbal control → heading 방향으로 5m → 가다가 ladder detect 시 stop → ladder 위치 반대로 5m 이동 → land
+- yolo_test_04: (switch 조종 없이 바로 시작함) gimbal pitch angle 0 → -30 → -60 → -90 → -60 → ...
 
 <br/>
 <br/>
