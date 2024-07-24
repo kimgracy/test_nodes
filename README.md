@@ -246,7 +246,10 @@ make px4_sitl gazebo-classic_standard_vtol__bulnabi
 terminal 4:
 
 ```
-ros2 run v4l2_camera v4l2_camera_node
+cd autoland_ws
+source ./install/local_setup.bash   (rosfoxy)
+ros2 run usb_cam usb_cam_node_exe --ros-args --params-file ~/autoland_ws/src/usb_cam/config/params_1.yaml
+
 ```
 
 terminal 5:
