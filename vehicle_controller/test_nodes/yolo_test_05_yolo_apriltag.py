@@ -25,6 +25,7 @@ from std_msgs.msg import Bool # for precision landing
 # import math, numpy
 import math
 import numpy as np
+import serial
 
 class VehicleController(Node):
 
@@ -85,6 +86,10 @@ class VehicleController(Node):
         self.time_checker = 0
         self.step_count = 0
 
+        # gimbal control
+        self.ser = serial.Serial('/dev/ttyGimbal', 115200)
+        self.gimbal_pitch = 0.0
+
         # add by chaewon
         self.obstacle_label = ''
         self.obstacle_x = 0
@@ -144,6 +149,8 @@ class VehicleController(Node):
         self.main_timer = self.create_timer(0.5, self.main_timer_callback)
         # add by chaewon
         self.vehicle_phase_publisher_timer = self.create_timer(0.5, self.vehicle_phase_publisher_callback)
+        # gimbal control
+        self.gimbal_timer = self.create_timer(0.5, self.gimbal_control_callback)
         
         print("Successfully executed: vehicle_controller")
         print("Please switch to offboard mode.")
@@ -194,6 +201,19 @@ class VehicleController(Node):
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             self.home_position = self.pos # set home position
             self.phase = 0
+    
+    # gimbal control
+    def gimbal_control_callback(self):
+        """gimbal control"""
+        # SITL
+        self.publish_gimbal_control(pitch=self.gimbal_pitch * np.pi / 180, yaw=0.0)
+
+        # real gimbal (serial)
+        data_fix = bytes([0x55, 0x66, 0x01, 0x04, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00])
+        data_var = to_twos_complement(10 * int(self.gimbal_pitch))
+        data_crc = crc_xmodem(data_fix + data_var)
+        packet = bytearray(data_fix + data_var + data_crc)
+        self.ser.write(packet)
     
     def main_timer_callback(self):
         if self.phase == 0:
@@ -373,6 +393,29 @@ class VehicleController(Node):
         msg.pitch_rate = float('nan')
         msg.yaw_rate = float('nan')
         self.gimbal_publisher.publish(msg)
+
+"""
+Gimbal Control
+"""
+def crc_xmodem(data: bytes) -> bytes:
+    crc = 0
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = (crc << 1) ^ 0x1021
+            else:
+                crc <<= 1
+            crc &= 0xFFFF
+    return crc.to_bytes(2, 'little')
+
+def to_twos_complement(number: int) -> bytes:
+    if number < 0:
+        number &= 0xFFFF
+    return number.to_bytes(2, 'little')
+
+def format_bytearray(byte_array: bytearray) -> str:
+    return ' '.join(f'{byte:02x}' for byte in byte_array)
     
 def main(args = None):
     rclpy.init(args=args)

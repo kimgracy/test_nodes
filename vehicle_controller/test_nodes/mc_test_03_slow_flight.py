@@ -214,7 +214,6 @@ class VehicleController(Node):
                 )
                 self.phase = 1
         elif self.phase == 1:
-            self.publish_gimbal_control(pitch=-math.pi/6, yaw=self.yaw)
             self.start_point = self.pos
             self.current_goal = np.array([(15.0)*math.cos(self.yaw), (15.0)*math.sin(self.yaw), -5.0])
             self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 1)
