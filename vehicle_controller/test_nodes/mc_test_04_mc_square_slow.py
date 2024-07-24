@@ -125,6 +125,7 @@ class VehicleController(Node):
     
     # 천천히 비행
     def make_setpoint_list(self, start, finish, v):
+        self.step_count = 0
         start = np.array(start)
         finish = np.array(finish)
         n = int(np.linalg.norm(finish - start) // (v*0.05))
@@ -183,7 +184,7 @@ class VehicleController(Node):
                 self.phase = 0.5
         elif self.phase == 0.5:
             self.start_point = self.pos
-            self.current_goal = np.array([2.0, 0.0, -5.0])
+            self.current_goal = np.array([5.0, 0.0, -5.0])
             self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 0.5)
             self.phase = 1
         elif self.phase == 1:
@@ -191,7 +192,7 @@ class VehicleController(Node):
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
                 self.start_point = self.pos
-                self.current_goal = np.array([2.0, 2.0, -5.0])
+                self.current_goal = np.array([5.0, 5.0, -5.0])
                 self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 0.5)
                 self.phase = 2
         elif self.phase == 2:
@@ -199,7 +200,7 @@ class VehicleController(Node):
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
                 self.start_point = self.pos
-                self.current_goal = np.array([0.0, 2.0, -5.0])
+                self.current_goal = np.array([0.0, 5.0, -5.0])
                 self.setpoint_list, self.step_velocity = self.make_setpoint_list(list(self.start_point), list(self.current_goal), 0.5)
                 self.phase = 3
         elif self.phase == 3:
