@@ -66,6 +66,11 @@
     type: px4_msgs::msg::GimbalManagerSetManualControl
     ```
 
+    ```
+    - topic: /fmu/in/vehicle_global_position
+    type: px4_msgs::msg::VehicleGlobalPosition
+    ```
+
 11. PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/1040_gazebo-classic_standard_vtol 가장 아래에 추가 (짐벌제어)
     ```
     param set-default MNT_MODE_IN 4
@@ -268,6 +273,7 @@ source ./install/local_setup.bash   (rosfoxy)
 ros2 run test_nodes mc_test_00
 ros2 run test_nodes mc_test_01
 ros2 run test_nodes mc_test_02 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_02_waypoint.yaml
+ros2 run test_nodes mc_test_05 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_02_waypoint.yaml
 ros2 run test_nodes yolo_test_01
 ros2 run test_nodes yolo_test_02
 ros2 run test_nodes yolo_test_03
