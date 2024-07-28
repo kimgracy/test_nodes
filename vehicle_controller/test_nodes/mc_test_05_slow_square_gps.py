@@ -47,7 +47,6 @@ class VehicleController(Node):
         """
         self.WP_gps = [np.array([0.0, 0.0, 0.0])]
         self.WP = [np.array([0.0, 0.0, 0.0])]
-        self.wp_position_geodetic = [np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])]
         self.declare_parameters(
             namespace='',
             parameters=[
@@ -73,7 +72,9 @@ class VehicleController(Node):
         self.vehicle_status = VehicleStatus()
         self.vehicle_local_position = VehicleLocalPosition()
         self.home_position = np.array([0.0, 0.0, 0.0])
+        self.home_position_gps = np.array([0.0, 0.0, 0.0])
         self.pos = np.array([0.0, 0.0, 0.0])
+        self.pos_gps = np.array([0.0, 0.0, 0.0])
         
         self.previous_goal = None
         self.current_goal = None
@@ -142,9 +143,6 @@ class VehicleController(Node):
         points = np.append(points, [last_point], axis=0)
         # 속도 벡터 생성
         velocity = list(v * (finish - start) / np.linalg.norm(finish - start))
-        print([list(point) for point in points])
-        print(n)
-        print(velocity)
         return [list(point) for point in points], velocity
     
     def step_by_step(self, setpoints, velocity):
@@ -178,6 +176,12 @@ class VehicleController(Node):
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_TAKEOFF)
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             self.home_position = self.pos # set home position
+            self.home_position_gps = self.pos_gps # set home position gps
+            for i in range(1, 5): #set position relative to the start position before takeoff
+                wp_position = p3d.geodetic2ned(self.WP_gps[i][0], self.WP_gps[i][1], self.WP_gps[i][2], self.home_position_gps[0], self.home_position_gps[1], self.home_position_gps[2])
+                wp_position = np.array(wp_position)
+                wp_position[2] = -5.0
+                self.WP.append(wp_position)
             self.phase = 0
     
     def main_timer_callback(self):
@@ -247,6 +251,7 @@ class VehicleController(Node):
         '''
         print(self.pos)
         print(self.phase)
+        print(self.WP)
 
     """
     Callback functions for subscribers.
@@ -264,12 +269,7 @@ class VehicleController(Node):
 
     def vehicle_global_position_callback(self, msg):
         self.vehicle_global_position = msg
-        if self.phase == -1:
-            self.start_position = np.array([msg.lat, msg.lon, msg.alt])
-            
-        for i in range(1, 5): #set position relative to the start position before takeoff
-            wp_position = p3d.geodetic2ned(self.WP_gps[i][0], self.WP_gps[i][1], self.WP_gps[i][2], self.start_position[0], self.start_position[1], self.start_position[2])
-            self.WP.append(np.array(wp_position))
+        self.pos_gps = np.array([msg.lat, msg.lon, msg.alt])
 
     """
     Functions for publishing topics.
