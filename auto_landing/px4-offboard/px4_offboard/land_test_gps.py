@@ -52,7 +52,7 @@ class VehicleController(Node):
                 ('WP1', None),
             ])
 
-        wp_position = [5, 0, -5]
+        wp_position = [3, 0, -5]
         self.WP.append(np.array(wp_position))
 
         """

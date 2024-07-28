@@ -180,7 +180,9 @@ class BezierControl(Node):
         self.publisher_offboard_mode = self.create_publisher(OffboardControlMode, '/fmu/in/offboard_control_mode', qos_profile)
         self.publisher_trajectory = self.create_publisher(TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile)
         self.publisher_vehicle_command = self.create_publisher(VehicleCommand, '/fmu/in/vehicle_command', qos_profile)
-
+        self.publisher_landing = self.create_publisher(Bool, 'landing', 10)
+        
+        
         self.timer_period = 0.02  # seconds
         self.timer = self.create_timer(self.timer_period, self.cmdloop_callback)
 
@@ -190,6 +192,7 @@ class BezierControl(Node):
         self.phase_check = False
         self.detect = 0
         self.loop_on = 1
+        self.pub = 0
 
         #Way point
         self.vehicle_position = np.zeros(3)
@@ -243,9 +246,9 @@ class BezierControl(Node):
             self.vehicle_velocity[1] = msg.vy
             self.vehicle_velocity[2] = msg.vz
 
-    def land_and_disarm(self):
-        self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
-        self.loop_on = 0
+    def land(self):
+            self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
+            self.loop_on = 0    
         
 
     def publish_vehicle_command(self, command, **kwargs):
@@ -265,10 +268,10 @@ class BezierControl(Node):
         msg.source_component = 1
         msg.from_external = True
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
-        self.vehicle_command_publisher.publish(msg)
+        self.publisher_vehicle_command.publish(msg)
 
     def cmdloop_callback(self):
-        if self.phase_check == True and self.detect == 1 and self.loop_on == 1:
+        if self.phase_check  and self.detect and self.loop_on:
             # Publish offboard control modes
             offboard_msg = OffboardControlMode()
             offboard_msg.timestamp = int(Clock().now().nanoseconds / 1000)
@@ -281,7 +284,7 @@ class BezierControl(Node):
                 trajectory_msg = TrajectorySetpoint()
                 trajectory_msg.timestamp = int(Clock().now().nanoseconds / 1000)
                 
-                if self.delta_t + int(1/self.timer_period) < self.count-1 and np.linalg.norm(self.vehicle_position[2]-self.xf[2]) > 0.7:   # if receiving command from the bezier curve
+                if self.delta_t + int(1/self.timer_period) < self.count-1 and np.linalg.norm(self.vehicle_position[2]-self.xf[2]) > 0.3:   # if receiving command from the bezier curve
                     trajectory_msg.position[0] = self.x[self.delta_t + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[1] = self.y[self.delta_t + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[2] = self.z[self.delta_t + int(1/self.timer_period)]#np.nan
@@ -289,33 +292,17 @@ class BezierControl(Node):
                     trajectory_msg.velocity[1] = np.nan #self.vy[self.delta_t]
                     trajectory_msg.velocity[2] = np.nan #self.vz[self.delta_t]
                     trajectory_msg.yaw = np.nan
-                    
-                    print(self.point1,self.point2,self.point3,self.point4,trajectory_msg.yaw,"\n",
-                            self.t, self.delta_t ,self.vx[self.delta_t], self.vy[self.delta_t], self.vz[self.delta_t],"\n",
-                            self.vehicle_velocity
-                            )
                     self.delta_t += 1
-                    
-                elif np.linalg.norm(self.vehicle_position[2]-self.xf[2]) < 0.7 and np.linalg.norm(self.vehicle_position[2]-self.xf[2]) > 0.4:  
-                    trajectory_msg.position[0] = self.xf[0]
-                    trajectory_msg.position[1] = self.xf[1]
-                    trajectory_msg.position[2] = self.xf[2]
-                    trajectory_msg.velocity[0] = np.nan
-                    trajectory_msg.velocity[1] = np.nan
-                    trajectory_msg.velocity[2] = 0.01
-                    trajectory_msg.yaw = np.nan
                 
-                elif np.linalg.norm(self.vehicle_position[2]-self.xf[2]) < 0.4:
-                    self.land_and_disarm()
-                    self.get_logger().info("land")
-                    
+                elif np.linalg.norm(self.vehicle_position[2]-self.xf[2]) < 0.3:
+                    self.land()
+
                 if self.trigger == 1:  # delta_t reset 
                     self.delta_t = 0
                     self.trigger = 0
-        print(np.linalg.norm(self.vehicle_position[2]-self.xf[2]))
                 self.publisher_trajectory.publish(trajectory_msg)
 
-
+        
 
 def main(args=None):
     rclpy.init(args=args)
