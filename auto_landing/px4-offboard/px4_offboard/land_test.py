@@ -20,6 +20,7 @@ from std_msgs.msg import Bool
 # import math, numpy
 import math
 import numpy as np
+import serial
 
 class VehicleController(Node):
 
@@ -70,8 +71,12 @@ class VehicleController(Node):
         self.previous_goal = None
         self.current_goal = None
 
-        self.gimbal_pitchangle = 0
+        self.gimbal_pitchangle = 0.0
         self.gimbal_yawangle = math.pi/2
+        
+        # gimbal control
+        self.ser = serial.Serial('/dev/ttyGimbal', 115200)
+        self.gimbal_pitch = 0.0
 
         """
         4. Create Subscribers
@@ -111,7 +116,10 @@ class VehicleController(Node):
         self.offboard_heartbeat = self.create_timer(0.1, self.offboard_heartbeat_callback)
         self.takeoff_timer = self.create_timer(0.5, self.takeoff_and_arm_callback)
         self.main_timer = self.create_timer(0.5, self.main_timer_callback)
-        self.gimbal_timer = self.create_timer(0.5, self.gimbal_timer_callback)
+        
+        # gimbal control
+        self.gimbal_timer = self.create_timer(0.5, self.gimbal_control_callback)
+        self.gimbal_timer_sitl = self.create_timer(0.5, self.gimbal_timer_callback_sitl)
         
         print("Successfully executed: vehicle_controller")
         print("Please switch to offboard mode.")
@@ -140,10 +148,23 @@ class VehicleController(Node):
             self.home_position = self.pos # set home position
             self.phase = 0
             self.landing_phase = False
+            
+    
+    # gimbal control
+    def gimbal_control_callback(self):
+        """gimbal control"""
+
+        # real gimbal (serial)
+        data_fix = bytes([0x55, 0x66, 0x01, 0x04, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00])
+        data_var = to_twos_complement(10 * int(self.gimbal_pitch))
+        data_crc = crc_xmodem(data_fix + data_var)
+        packet = bytearray(data_fix + data_var + data_crc)
+        self.ser.write(packet)
     
     def main_timer_callback(self):
 
         if self.phase == 0:
+        	
             if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LOITER:
                 self.publish_vehicle_command(
                     VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
@@ -152,8 +173,8 @@ class VehicleController(Node):
                 )
                 self.phase = 0.5
         elif self.phase == 0.5:
-            self.gimbal_pitchangle = -math.pi/2
-            self.current_goal = [0.0, 3.0, -10.0]
+            self.gimbal_pitch = -90
+            self.current_goal = [0.0, 1.5, -3.0]
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
             self.phase = 1
         elif self.phase == 1:
@@ -164,8 +185,7 @@ class VehicleController(Node):
     
             
 
-
-    def gimbal_timer_callback(self):
+    def gimbal_timer_callback_sitl(self):
         gim_msg = GimbalManagerSetManualControl()
         gim_msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         gim_msg.origin_sysid = 0
@@ -243,6 +263,39 @@ class VehicleController(Node):
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
         # self.get_logger().info(f"Publishing position setpoints {setposition}")
+    
+"""
+Gimbal Control
+"""
+def crc_xmodem(data: bytes) -> bytes:
+    crc = 0
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = (crc << 1) ^ 0x1021
+            else:
+                crc <<= 1
+            crc &= 0xFFFF
+    return crc.to_bytes(2, 'little')
+
+def to_twos_complement(number: int) -> bytes:
+    if number < 0:
+        number &= 0xFFFF
+    return number.to_bytes(2, 'little')
+
+def format_bytearray(byte_array: bytearray) -> str:
+    return ' '.join(f'{byte:02x}' for byte in byte_array)
+    
+    
+def main(args = None):
+    rclpy.init(args=args)
+
+    vehicle_controller = VehicleController()
+    rclpy.spin(vehicle_controller)
+
+    vehicle_controller.destroy_node()
+    rclpy.shutdown()    
     
 def main(args = None):
     rclpy.init(args=args)

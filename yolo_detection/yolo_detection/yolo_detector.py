@@ -31,7 +31,7 @@ class YoloDetector(Node):
 
         # define model path and load the model
         model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best.pt')
-        self.model = torch.hub.load(os.path.expanduser('~/yolov5'), 'custom', path=model_path, source='local')
+        self.model = torch.hub.load(os.path.expanduser('~/yolov5/yolov5'), 'custom', path=model_path, source='local')
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print(type(self.model))
 
