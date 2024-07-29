@@ -82,6 +82,9 @@ class VehicleController(Node):
         self.vehicle_local_position_subscriber = self.create_subscription(
             VehicleLocalPosition, '/fmu/out/vehicle_local_position', self.vehicle_local_position_callback, qos_profile
         )
+        self.landing_pahse_check_subscriber = self.create_subscription(
+            Bool, 'landing', self.landing_phase_callback, qos_profile
+        )
 
         """
         5. Create Publishers
@@ -136,6 +139,7 @@ class VehicleController(Node):
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             self.home_position = self.pos # set home position
             self.phase = 0
+            self.landing_phase = False
     
     def main_timer_callback(self):
 
@@ -149,37 +153,15 @@ class VehicleController(Node):
                 self.phase = 0.5
         elif self.phase == 0.5:
             self.gimbal_pitchangle = -math.pi/2
-            self.make_radius(self.pos)
-            self.current_goal = self.WP_radius[1]
+            self.current_goal = [0.0, 3.0, -10.0]
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
             self.phase = 1
-        elif self.phase >= 1 and self.phase < 5:
-            distance = np.linalg.norm(self.pos - self.current_goal)
-            if distance < self.mc_acceptance_radius or self.wait > 10:
-                if self.phase == 4:
-                    self.phase = 5
-                else:
-                    self.previous_goal = self.current_goal
-                    self.current_goal = self.WP_radius[self.phase + 1]
-                    self.publish_trajectory_setpoint(position_sp=self.current_goal)
-                    self.phase += 1
-                    self.wait = 0
-            else:
-                self.publish_trajectory_setpoint(position_sp=self.current_goal)
-                self.wait += 1
-        elif self.phase == 5:
+        elif self.phase == 1:
             ALmsg = Bool()
             ALmsg.data = True
             self.autolanding_publisher.publish(ALmsg)
         print(self.phase)
     
-    def make_radius(self,current_pos):
-        self.WP_radius = [[0,0,0]]
-        rauius = 2
-        wps = [[1,0,0],[0,1,0],[-1,0,0],[0,-1,0]]
-        for wp in wps:
-            wp = current_pos + np.array(wp) * rauius
-            self.WP_radius.append(wp)
             
 
 
@@ -215,6 +197,9 @@ class VehicleController(Node):
             # set position relative to the home position after takeoff
             self.pos = self.pos - self.home_position
 
+    def landing_phase_callback(self, msg):
+        self.landing_phase = msg.data
+        print("Landing phase: ", self.landing_phasse)
     """
     Functions for publishing topics.
     """
