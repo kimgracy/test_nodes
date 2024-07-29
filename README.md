@@ -273,7 +273,7 @@ source ./install/local_setup.bash   (rosfoxy)
 ros2 run test_nodes mc_test_00
 ros2 run test_nodes mc_test_01
 ros2 run test_nodes mc_test_02 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_02_waypoint.yaml
-ros2 run test_nodes mc_test_05 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_02_waypoint.yaml
+ros2 run test_nodes mc_test_05 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_05_gps_waypoint.yaml
 ros2 run test_nodes yolo_test_01
 ros2 run test_nodes yolo_test_02
 ros2 run test_nodes yolo_test_03
@@ -310,3 +310,24 @@ sudo make install
 cd mjpg-streamer/mjpg-streamer-experimental
 ./mjpg_streamer -i "./input_file.so -f /tmp -n stream.jpg -d 0.1" -o "./output_http.so -w ./www"
 ```
+
+# Auto Landing
+```
+// precise landing (with apriltag)
+ros2 launch goal_pub one.launch.py
+ros2 run px4_offboard land_test
+
+// gps landing (without apriltag)
+ros2 run px4_offboard land_test_gps
+```
+
+# FLGITH TEST
+
+- flight_test_cmd bash = Micro XRCE-DDS Agent + MJPG Stremer + USB Camera + YOLO detection
+
+```
+cd ~/test_ws/src
+bash flight_test_cmd.bash
+```
+
+
