@@ -1,7 +1,6 @@
 import os
 import rclpy
 import sys
-# from pathlib import Path # for yolov5 local
 
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
@@ -30,11 +29,11 @@ class YoloDetector(Node):
 
 
         # define model path and load the model
-        model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best.pt')
-        self.model = torch.hub.load(os.path.expanduser('~/yolov5/yolov5'), 'custom', path=model_path, source='local')
+        model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small.engine')
+        self.model = torch.hub.load(os.path.expanduser('~/yolov5'), 'custom', path=model_path, source='local')
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print(type(self.model))
-
+        
         
         # create publishers
         self.publisher_obstacle = self.create_publisher(YoloObstacle, '/yolo_obstacle', qos_profile)

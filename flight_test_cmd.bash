@@ -8,12 +8,12 @@ sleep 5
 echo "Micro XRCE-DDS Agent started."
 
 # Start MJPG Streamer
-echo "------------------------------"
-echo "Starting MJPG Streamer..."
-cd ~/mjpg-streamer/mjpg-streamer-experimental
-./mjpg_streamer -i "./input_file.so -f /tmp -n stream.jpg -d 0.1" -o "./output_http.so -w ./www" &
-sleep 5
-echo "MJPG Streamer started."
+# echo "------------------------------"
+# echo "Starting MJPG Streamer..."
+# cd ~/mjpg-streamer/mjpg-streamer-experimental
+# ./mjpg_streamer -i "./input_file.so -f /tmp -n stream.jpg -d 0.1" -o "./output_http.so -w ./www" &
+# sleep 5
+# echo "MJPG Streamer started."
 
 cd ~/test_ws
 source ./install/local_setup.bash
@@ -26,11 +26,11 @@ sleep 5
 echo "USB camera node started."
 
 # Sart YOLO detection
-echo "------------------------------"
-echo "Starting YOLO detection..."
-ros2 run yolo_detection yolo_detector &
-sleep 5
-echo "YOLO detection started."
+# echo "------------------------------"
+# echo "Starting YOLO detection..."
+# ros2 run yolo_detection yolo_detector &
+# sleep 5
+# echo "YOLO detection started."
 
 # Keep the script running to maintain background processes
 wait
