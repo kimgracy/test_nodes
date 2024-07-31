@@ -71,11 +71,14 @@ class TagPublisher(Node):
         
         self.tag_world_pub = self.create_publisher(Float32MultiArray, 'bezier_waypoint/raw', 10)
         self.last_tag = np.array([0,0,0])
-        print("why!!")
+        self.detect = False
         
         
     def tag_callback(self, msg):
         try:
+            if self.detect == False:
+                self.detect = True
+                self.get_logger().info("Tag detected")
             transform = msg.transforms[0].transform
             tag_pose = transform.translation
             tag_q = transform.rotation
@@ -83,11 +86,9 @@ class TagPublisher(Node):
             rotation = quat2R(self.drone_q)
 
             tag_body = np.array([-tag_pose.y, tag_pose.x, tag_pose.z])   #changed because 90degree rotation.
-            self.get_logger().info("drone  : %s" % self.drone_world)
             drone2tag_world = np.matmul(rotation,tag_body)
             tag_world = drone2tag_world+self.drone_world
             self.last_tag = tag_world
-            self.get_logger().info("tag  : %s" % drone2tag_world)
            
             tag_world_msg = Float32MultiArray()
             tag_world_msg.data = [tag_world[0], tag_world[1], 0., 0., 0., 0.5] # in order of xf and vf

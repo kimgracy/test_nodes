@@ -18,6 +18,9 @@ from px4_msgs.msg import GimbalManagerSetManualControl
 # add by chaewon
 from my_bboxes_msg.msg import VehiclePhase
 from my_bboxes_msg.msg import YoloObstacle # label, x, y
+# add by jintae
+from std_msgs.msg import Bool
+
 
 # import math, numpy
 import math
@@ -144,7 +147,10 @@ class VehicleController(Node):
         self.vehicle_phase_publisher = self.create_publisher(
             VehiclePhase, '/vehicle_phase', qos_profile
         )
-
+	# add by jinate
+ 	self.autolanding_publisher = self.create_publisher(
+            Bool, 'auto_land_on', 10
+        )
         """
         6. timer setup
         """
@@ -361,7 +367,9 @@ class VehicleController(Node):
                     self.time_checker = 0
                     self.phase = 5
         elif self.phase == 5:
-            self.land()
+            ALmsg = Bool()
+            ALmsg.data = True
+            self.autolanding_publisher.publish(ALmsg)
         print(self.phase)
 
     """

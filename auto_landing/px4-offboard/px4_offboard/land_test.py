@@ -20,6 +20,7 @@ from std_msgs.msg import Bool
 # import math, numpy
 import math
 import numpy as np
+import serial
 
 class VehicleController(Node):
 
@@ -70,6 +71,7 @@ class VehicleController(Node):
         self.previous_goal = None
         self.current_goal = None
 
+        self.ser = serial.Serial('/dev/ttyGimbal', 115200)
         self.gimbal_pitchangle = 0
         self.gimbal_yawangle = math.pi/2
 
@@ -81,6 +83,9 @@ class VehicleController(Node):
         )
         self.vehicle_local_position_subscriber = self.create_subscription(
             VehicleLocalPosition, '/fmu/out/vehicle_local_position', self.vehicle_local_position_callback, qos_profile
+        )
+        self.landing_pahse_check_subscriber = self.create_subscription(
+            Bool, 'landing', self.landing_phase_callback, qos_profile
         )
 
         """
@@ -136,7 +141,10 @@ class VehicleController(Node):
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             self.home_position = self.pos # set home position
             self.phase = 0
+            self.landing_phase = False
     
+    
+
     def main_timer_callback(self):
 
         if self.phase == 0:
@@ -149,37 +157,15 @@ class VehicleController(Node):
                 self.phase = 0.5
         elif self.phase == 0.5:
             self.gimbal_pitchangle = -math.pi/2
-            self.make_radius(self.pos)
-            self.current_goal = self.WP_radius[1]
+            self.current_goal = [0.0, 3.0, -5.0]
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
             self.phase = 1
-        elif self.phase >= 1 and self.phase < 5:
-            distance = np.linalg.norm(self.pos - self.current_goal)
-            if distance < self.mc_acceptance_radius or self.wait > 10:
-                if self.phase == 4:
-                    self.phase = 5
-                else:
-                    self.previous_goal = self.current_goal
-                    self.current_goal = self.WP_radius[self.phase + 1]
-                    self.publish_trajectory_setpoint(position_sp=self.current_goal)
-                    self.phase += 1
-                    self.wait = 0
-            else:
-                self.publish_trajectory_setpoint(position_sp=self.current_goal)
-                self.wait += 1
-        elif self.phase == 5:
+        elif self.phase == 1:
             ALmsg = Bool()
             ALmsg.data = True
             self.autolanding_publisher.publish(ALmsg)
         print(self.phase)
     
-    def make_radius(self,current_pos):
-        self.WP_radius = [[0,0,0]]
-        rauius = 2
-        wps = [[1,0,0],[0,1,0],[-1,0,0],[0,-1,0]]
-        for wp in wps:
-            wp = current_pos + np.array(wp) * rauius
-            self.WP_radius.append(wp)
             
 
 
@@ -196,6 +182,12 @@ class VehicleController(Node):
         gim_msg.pitch_rate = float('nan')
         gim_msg.yaw_rate = float('nan')
         self.gimbal_publisher.publish(gim_msg)
+
+        data_fix = bytes([0x55, 0x66, 0x01, 0x04, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00])
+        data_var = to_twos_complement(10 * int(self.gimbal_pitchangle * 180 / math.pi))
+        data_crc = crc_xmodem(data_fix + data_var)
+        packet = bytearray(data_fix + data_var + data_crc)
+        self.ser.write(packet)
 
 
     """
@@ -215,6 +207,9 @@ class VehicleController(Node):
             # set position relative to the home position after takeoff
             self.pos = self.pos - self.home_position
 
+    def landing_phase_callback(self, msg):
+        self.landing_phase = msg.data
+        print("Landing phase: ", self.landing_phasse)
     """
     Functions for publishing topics.
     """
@@ -258,7 +253,30 @@ class VehicleController(Node):
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
         # self.get_logger().info(f"Publishing position setpoints {setposition}")
-    
+
+"""
+Gimbal Control
+"""
+def crc_xmodem(data: bytes) -> bytes:
+    crc = 0
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = (crc << 1) ^ 0x1021
+            else:
+                crc <<= 1
+            crc &= 0xFFFF
+    return crc.to_bytes(2, 'little')
+
+def to_twos_complement(number: int) -> bytes:
+    if number < 0:
+        number &= 0xFFFF
+    return number.to_bytes(2, 'little')
+
+def format_bytearray(byte_array: bytearray) -> str:
+    return ' '.join(f'{byte:02x}' for byte in byte_array)
+
 def main(args = None):
     rclpy.init(args=args)
 

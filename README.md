@@ -66,6 +66,11 @@
     type: px4_msgs::msg::GimbalManagerSetManualControl
     ```
 
+    ```
+    - topic: /fmu/in/vehicle_global_position
+    type: px4_msgs::msg::VehicleGlobalPosition
+    ```
+
 11. PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/1040_gazebo-classic_standard_vtol 가장 아래에 추가 (짐벌제어)
     ```
     param set-default MNT_MODE_IN 4
@@ -246,7 +251,10 @@ make px4_sitl gazebo-classic_standard_vtol__bulnabi
 terminal 4:
 
 ```
-ros2 run v4l2_camera v4l2_camera_node
+cd autoland_ws
+source ./install/local_setup.bash   (rosfoxy)
+ros2 run usb_cam usb_cam_node_exe --ros-args --params-file ~/autoland_ws/src/usb_cam/config/params_1.yaml
+
 ```
 
 terminal 5:
@@ -265,6 +273,7 @@ source ./install/local_setup.bash   (rosfoxy)
 ros2 run test_nodes mc_test_00
 ros2 run test_nodes mc_test_01
 ros2 run test_nodes mc_test_02 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_02_waypoint.yaml
+ros2 run test_nodes mc_test_05 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_05_gps_waypoint.yaml
 ros2 run test_nodes yolo_test_01
 ros2 run test_nodes yolo_test_02
 ros2 run test_nodes yolo_test_03
@@ -301,3 +310,24 @@ sudo make install
 cd mjpg-streamer/mjpg-streamer-experimental
 ./mjpg_streamer -i "./input_file.so -f /tmp -n stream.jpg -d 0.1" -o "./output_http.so -w ./www"
 ```
+
+# Auto Landing
+```
+// precise landing (with apriltag)
+ros2 launch goal_pub one.launch.py
+ros2 run px4_offboard land_test
+
+// gps landing (without apriltag)
+ros2 run px4_offboard land_test_gps
+```
+
+# FLGITH TEST
+
+- flight_test_cmd bash = Micro XRCE-DDS Agent + MJPG Stremer + USB Camera + YOLO detection
+
+```
+cd ~/test_ws/src
+bash flight_test_cmd.bash
+```
+
+
