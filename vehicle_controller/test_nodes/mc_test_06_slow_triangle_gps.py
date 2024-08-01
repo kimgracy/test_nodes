@@ -157,17 +157,27 @@ class VehicleController(Node):
         return [list(point) for point in points], velocity, distance
     
     def step_by_step(self, setpoints, velocity, distance):
-        if math.floor(self.step_count) == len(setpoints)-1:
+        if math.floor(self.step_count) == len(setpoints)-1: # stop at the last point
             previous_goal = np.array(setpoints[-2])
             self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array([0.0, 0.0, 0.0]))
             #print(f'finish at point {self.step_count}')
-        elif math.floor(self.step_count) >= len(setpoints)-int(distance/self.main_timer_period):
+        elif np.linalg.norm(self.pos - setpoints[-2]) < self.mc_acceptance_radius * 2: # stop when the vehicle is close to the goal
+            self.step_count = len(setpoints)-1
+            previous_goal = np.array(setpoints[-2])
+            self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array([0.0, 0.0, 0.0]))
+        elif math.floor(self.step_count) >= len(setpoints)-int(distance/self.main_timer_period): # deceleration
             self.step_count += 0.5
             a = float(1-(self.step_count-(len(setpoints)-int(distance/self.main_timer_period)))*self.main_timer_period/distance)
             velocity = np.array(velocity) * a
             self.publish_trajectory_setpoint(velocity_sp=velocity)
             #print(f'stop at point {self.step_count}')
-        else:
+        elif math.floor(self.step_count) <= int(distance/self.main_timer_period): # accaleration
+            self.step_count += 0.5
+            a = float(self.step_count*self.main_timer_period/distance)
+            velocity = np.array(velocity) * a
+            self.publish_trajectory_setpoint(velocity_sp=velocity)
+            #print(f'accalerate {self.step_count}')
+        else: # keep going
             self.step_count += 1
             previous_goal = np.array(setpoints[int(self.step_count)])
             self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array(velocity))
@@ -214,18 +224,24 @@ class VehicleController(Node):
             self.step_by_step(self.setpoint_list, self.step_velocity, self.breaking_distance)
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
-                self.start_point = self.pos
-                self.current_goal = self.WP[2]
-                self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
-                self.phase = 2
+                self.time_checker += 1
+                if self.time_checker > 25:
+                    self.start_point = self.pos
+                    self.current_goal = self.WP[2]
+                    self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
+                    self.phase = 2
+                    self.time_checker = 0
         elif self.phase == 2:
             self.step_by_step(self.setpoint_list, self.step_velocity, self.breaking_distance)
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
-                self.start_point = self.pos
-                self.current_goal = self.WP[3]
-                self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
-                self.phase = 3
+                self.time_checker += 1
+                if self.time_checker > 25:
+                    self.start_point = self.pos
+                    self.current_goal = self.WP[3]
+                    self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
+                    self.phase = 3
+                    self.time_checker = 0
         elif self.phase == 3:
             self.step_by_step(self.setpoint_list, self.step_velocity, self.breaking_distance)
             distance = np.linalg.norm(self.pos - self.current_goal)
