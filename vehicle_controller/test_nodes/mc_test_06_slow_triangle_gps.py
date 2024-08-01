@@ -20,6 +20,7 @@ from px4_msgs.msg import TrajectorySetpoint
 import math
 import numpy as np
 import pymap3d as p3d
+import yaml
 
 # import argparse to get arguments. get step_velocity
 import argparse
@@ -58,6 +59,7 @@ class VehicleController(Node):
                 ('gps_WP1', None),
                 ('gps_WP2', None),
                 ('gps_WP3', None),
+                ('velocity', None),
             ])
 
         for i in range(1, 4):
@@ -89,7 +91,7 @@ class VehicleController(Node):
         self.step_velocity = 0.0
         self.step_count = 0
         self.breaking_distance = 1.0
-        self.step_velocity = step_velocity
+        self.set_velocity = self.get_parameter(f'velocity').value # receive from yaml file
         self.max_acceleration = 9.8*np.tan(8*np.pi/180) # 8 degree tilt angle
 
         self.time_checker = 0
@@ -170,7 +172,7 @@ class VehicleController(Node):
             previous_goal = np.array(setpoints[int(self.step_count)])
             self.publish_trajectory_setpoint(position_sp=previous_goal, velocity_sp=np.array(velocity))
             #print(f'going to point {self.step_count}')
-
+    
     """
     Callback functions for the timers
     """
@@ -186,11 +188,12 @@ class VehicleController(Node):
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             self.home_position = self.pos # set home position
             self.home_position_gps = self.pos_gps # set home position gps
-            for i in range(1, 5): #set position relative to the start position before takeoff
+            for i in range(1, 4): #set position relative to the start position before takeoff
                 wp_position = p3d.geodetic2ned(self.WP_gps[i][0], self.WP_gps[i][1], self.WP_gps[i][2], self.home_position_gps[0], self.home_position_gps[1], self.home_position_gps[2])
                 wp_position = np.array(wp_position)
                 wp_position[2] = -5.0
                 self.WP.append(wp_position)
+            print(self.WP)
             self.phase = 0
     
     def main_timer_callback(self):
@@ -205,7 +208,7 @@ class VehicleController(Node):
         elif self.phase == 0.5:
             self.start_point = self.pos
             self.current_goal = self.WP[1]
-            self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.step_velocity)
+            self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
             self.phase = 1
         elif self.phase == 1:
             self.step_by_step(self.setpoint_list, self.step_velocity, self.breaking_distance)
@@ -213,7 +216,7 @@ class VehicleController(Node):
             if distance < self.mc_acceptance_radius:
                 self.start_point = self.pos
                 self.current_goal = self.WP[2]
-                self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.step_velocity)
+                self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
                 self.phase = 2
         elif self.phase == 2:
             self.step_by_step(self.setpoint_list, self.step_velocity, self.breaking_distance)
@@ -221,7 +224,7 @@ class VehicleController(Node):
             if distance < self.mc_acceptance_radius:
                 self.start_point = self.pos
                 self.current_goal = self.WP[3]
-                self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.step_velocity)
+                self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
                 self.phase = 3
         elif self.phase == 3:
             self.step_by_step(self.setpoint_list, self.step_velocity, self.breaking_distance)
@@ -229,11 +232,10 @@ class VehicleController(Node):
             if distance < self.mc_acceptance_radius:
                 self.land()
                 self.phase = -2
-
         
-        print(self.pos)
+        #print(self.pos)
         print(self.phase)
-        print(self.WP)
+        #print(self.WP)
 
 
     """
@@ -298,24 +300,16 @@ class VehicleController(Node):
         self.trajectory_setpoint_publisher.publish(msg)
         # self.get_logger().info(f"Publishing position setpoints {setposition}")
     
+
 def main(args = None):
     rclpy.init(args=args)
 
-    parser = argparse.ArgumentParser(description='Vehicle Controller Node')
-    parser.add_argument('--arg', type=str, required=True, help='Arguments in the form key=value')
-    parsed_args = parser.parse_args()
-
-    arg_dict = dict(arg.split('=') for arg in parsed_args.arg.split())
-    if 'velocity' in arg_dict:
-        step_velocity = float(arg_dict(['velocity']))
-    else:
-        step_velocity = 2.0
-
-    vehicle_controller = VehicleController(step_velocity)
+    vehicle_controller = VehicleController()
     rclpy.spin(vehicle_controller)
 
     vehicle_controller.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     try:
