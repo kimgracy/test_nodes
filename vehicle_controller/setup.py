@@ -37,6 +37,8 @@ setup(
             'yolo_test_04 = test_nodes.yolo_test_04_gimbal:main',
             'yolo_test_05 = test_nodes.yolo_test_05_yolo_apriltag:main',
             'yolo_test_06 = test_nodes.yolo_test_06_yolo_slow:main',
+            'fw_test_01 = test_nodes.fw_test_01_waypoints:main',
+            'fw_test_02 = test_nodes.fw_test_02_smooth_waypoints:main',
         ],
     },
 )
