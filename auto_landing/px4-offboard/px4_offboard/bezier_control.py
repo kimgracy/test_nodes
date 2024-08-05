@@ -295,7 +295,7 @@ class BezierControl(Node):
                     trajectory_msg.velocity[0] = np.nan #self.vx[self.delta_t] 
                     trajectory_msg.velocity[1] = np.nan #self.vy[self.delta_t]
                     trajectory_msg.velocity[2] = np.nan #self.vz[self.delta_t]
-                    trajectory_msg.yaw = np.nan
+                    trajectory_msg.yaw = 0.0
                     self.delta_t += 1
                     self.publisher_trajectory.publish(trajectory_msg)
                 
