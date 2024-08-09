@@ -60,6 +60,7 @@ class VehicleController(Node):
                 ('gps_WP2', None),
                 ('gps_WP3', None),
                 ('velocity', None),
+                ('angle', None),
             ])
 
         for i in range(1, 4):
@@ -90,9 +91,9 @@ class VehicleController(Node):
         self.setpoint_list = []
         self.step_velocity = 0.0
         self.step_count = 0
-        self.breaking_distance = 1.0
+        self.braking_distance = 1.0
         self.set_velocity = self.get_parameter(f'velocity').value # receive from yaml file
-        self.max_acceleration = 9.8*np.tan(8*np.pi/180) # 8 degree tilt angle
+        self.max_acceleration = 9.8*np.tan((self.get_parameter(f'angle').value)*np.pi/180) # 8 degree tilt angle
 
         self.time_checker = 0
 
@@ -218,32 +219,32 @@ class VehicleController(Node):
         elif self.phase == 0.5:
             self.start_point = self.pos
             self.current_goal = self.WP[1]
-            self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
+            self.setpoint_list, self.step_velocity, self.braking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
             self.phase = 1
         elif self.phase == 1:
-            self.step_by_step(self.setpoint_list, self.step_velocity, self.breaking_distance)
+            self.step_by_step(self.setpoint_list, self.step_velocity, self.braking_distance)
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
                 self.time_checker += 1
                 if self.time_checker > 25:
                     self.start_point = self.pos
                     self.current_goal = self.WP[2]
-                    self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
+                    self.setpoint_list, self.step_velocity, self.braking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
                     self.phase = 2
                     self.time_checker = 0
         elif self.phase == 2:
-            self.step_by_step(self.setpoint_list, self.step_velocity, self.breaking_distance)
+            self.step_by_step(self.setpoint_list, self.step_velocity, self.braking_distance)
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
                 self.time_checker += 1
                 if self.time_checker > 25:
                     self.start_point = self.pos
                     self.current_goal = self.WP[3]
-                    self.setpoint_list, self.step_velocity, self.breaking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
+                    self.setpoint_list, self.step_velocity, self.braking_distance = self.make_setpoint_list(list(self.start_point), list(self.current_goal), self.set_velocity)
                     self.phase = 3
                     self.time_checker = 0
         elif self.phase == 3:
-            self.step_by_step(self.setpoint_list, self.step_velocity, self.breaking_distance)
+            self.step_by_step(self.setpoint_list, self.step_velocity, self.braking_distance)
             distance = np.linalg.norm(self.pos - self.current_goal)
             if distance < self.mc_acceptance_radius:
                 self.land()
