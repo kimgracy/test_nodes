@@ -274,6 +274,7 @@ ros2 run test_nodes mc_test_00
 ros2 run test_nodes mc_test_01
 ros2 run test_nodes mc_test_02 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_02_waypoint.yaml
 ros2 run test_nodes mc_test_05 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_05_gps_waypoint.yaml
+ros2 run test_nodes mc_test_06 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/mc_test_06_gps_waypoint.yaml
 ros2 run test_nodes yolo_test_01
 ros2 run test_nodes yolo_test_02
 ros2 run test_nodes yolo_test_03
