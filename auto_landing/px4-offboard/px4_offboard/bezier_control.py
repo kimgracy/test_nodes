@@ -202,7 +202,7 @@ class BezierControl(Node):
  
     def vehicle_status_callback(self, msg):
         self.nav_state = msg.nav_state
-
+        
     def phase_check_callback(self,msg):
         self.phase_check = msg.data
 
@@ -288,7 +288,7 @@ class BezierControl(Node):
                 trajectory_msg = TrajectorySetpoint()
                 trajectory_msg.timestamp = int(Clock().now().nanoseconds / 1000)
                 
-                if self.delta_t + int(1/self.timer_period) < self.count-1 and np.linalg.norm(self.vehicle_position[2]-self.xf[2]) > 0.3:   # if receiving command from the bezier curve
+                if self.delta_t + int(1/self.timer_period) < self.count-1 and np.linalg.norm(self.vehicle_position[2]-self.xf[2]) > 0.5:   # if receiving command from the bezier curve
                     trajectory_msg.position[0] = self.x[self.delta_t + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[1] = self.y[self.delta_t + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[2] = self.z[self.delta_t + int(1/self.timer_period)]#np.nan
@@ -299,13 +299,12 @@ class BezierControl(Node):
                     self.delta_t += 1
                     self.publisher_trajectory.publish(trajectory_msg)
                 
-                elif np.linalg.norm(self.vehicle_position[2]-self.xf[2]) < 0.3:
+                elif np.linalg.norm(self.vehicle_position[2]-self.xf[2]) < 0.5:
                     self.land()
 
                 if self.trigger == 1:  # delta_t reset 
                     self.delta_t = 0
                     self.trigger = 0
-
         
 
 def main(args=None):
