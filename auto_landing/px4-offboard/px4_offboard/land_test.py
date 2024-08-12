@@ -71,7 +71,7 @@ class VehicleController(Node):
         self.previous_goal = None
         self.current_goal = None
 
-        ##self.ser = serial.Serial('/dev/ttyGimbal', 115200)
+        self.ser = serial.Serial('/dev/ttyGimbal', 115200)
         self.gimbal_pitchangle = 0
         self.gimbal_yawangle = math.pi/2
 
@@ -186,8 +186,8 @@ class VehicleController(Node):
         data_fix = bytes([0x55, 0x66, 0x01, 0x04, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00])
         data_var = to_twos_complement(10 * int(self.gimbal_pitchangle * 180 / math.pi))
         data_crc = crc_xmodem(data_fix + data_var)
-        ##packet = bytearray(data_fix + data_var + data_crc)
-        ##self.ser.write(packet)
+        packet = bytearray(data_fix + data_var + data_crc)
+        self.ser.write(packet)
 
 
     """
