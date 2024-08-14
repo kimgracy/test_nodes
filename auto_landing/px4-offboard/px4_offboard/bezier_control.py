@@ -187,7 +187,8 @@ class BezierControl(Node):
         self.timer = self.create_timer(self.timer_period, self.cmdloop_callback)
 
         self.nav_state = VehicleStatus.NAVIGATION_STATE_MAX
-        self.delta_t = 0
+        self.delta_t = -1
+        self.delta_t_goal = 0
         self.trigger = 0
         self.phase_check = False
         self.detect = 0
@@ -199,6 +200,8 @@ class BezierControl(Node):
         self.vehicle_velocity = np.zeros(3)
         self.xf = np.zeros(3)
         self.vf = np.zeros(3)
+
+        self.goal_position = [0.0, 0.0, 0.0] # landing position in gps, x + 0.5, y, z + 0.4
  
     def vehicle_status_callback(self, msg):
         self.nav_state = msg.nav_state
@@ -228,6 +231,20 @@ class BezierControl(Node):
         self.point4 = bezier_points.point4#
         self.trigger = 1 # T reset trigger
 
+    def goal_position_bezier(self):
+        #Edge case: if apriltag is not detected for delta_t = 300
+        self.xf_goal = np.asfarray(self.goal_position)
+        self.vf_goal = np.asfarray([0.0, 0.0, 0.5])
+        self.init_position_goal = copy.deepcopy(self.vehicle_position)
+        bezier_points_goal = points(self.init_position_goal, self.xf_goal, self.vehicle_velocity, self.vf_goal, hz)
+        self.x_goal = bezier_points_goal.bezier_x()
+        self.y_goal = bezier_points_goal.bezier_y()
+        self.z_goal = bezier_points_goal.bezier_z()
+        self.count_goal = bezier_points_goal.count
+        self.t_goal = bezier_points_goal.t
+
+        self.get_logger().info(f"bezier_points: {self.vehicle_position},{bezier_points_goal.point2}")
+
 
     def vehicle_position_callback(self, msg):
         self.vehicle_position[0] = msg.x
@@ -241,6 +258,8 @@ class BezierControl(Node):
             self.vehicle_velocity[0] = msg.vx
             self.vehicle_velocity[1] = msg.vy
             self.vehicle_velocity[2] = msg.vz
+        if self.delta_t_goal == 0:
+            self.goal_position_bezier()
 
     def land(self):
         self.get_logger().info("land")
@@ -280,15 +299,23 @@ class BezierControl(Node):
         self.publisher_offboard_mode.publish(msg)
     
     def cmdloop_callback(self):
-        if self.phase_check  and self.detect and self.loop_on:
-            # Publish offboard control modes
+        if self.phase_check and self.loop_on:
             self.publish_offboard_control_mode(position=True)
             if self.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-
                 trajectory_msg = TrajectorySetpoint()
                 trajectory_msg.timestamp = int(Clock().now().nanoseconds / 1000)
                 
-                if self.delta_t + int(1/self.timer_period) < self.count-1 and np.linalg.norm(self.vehicle_position[2]-self.xf[2]) > 0.5:   # if receiving command from the bezier curve
+                if self.delta_t == -1 or self.delta_t > 300:
+                    trajectory_msg.position[0] = self.x_goal[self.delta_t_goal + int(1/self.timer_period)]#np.nan
+                    trajectory_msg.position[1] = self.y_goal[self.delta_t_goal + int(1/self.timer_period)]#np.nan
+                    trajectory_msg.position[2] = self.z_goal[self.delta_t_goal + int(1/self.timer_period)]#np.nan
+                    trajectory_msg.velocity[0] = np.nan #self.vx[self.delta_t] 
+                    trajectory_msg.velocity[1] = np.nan #self.vy[self.delta_t]
+                    trajectory_msg.velocity[2] = np.nan #self.vz[self.delta_t]
+                    self.delta_t_goal += 1
+                    self.publisher_trajectory.publish(trajectory_msg)
+
+                elif self.delta_t + int(1/self.timer_period) < self.count-1 and np.linalg.norm(self.vehicle_position[2]-self.xf[2]) > 0.5 and self.detect:   # if receiving command from the bezier curve
                     trajectory_msg.position[0] = self.x[self.delta_t + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[1] = self.y[self.delta_t + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[2] = self.z[self.delta_t + int(1/self.timer_period)]#np.nan
@@ -297,6 +324,7 @@ class BezierControl(Node):
                     trajectory_msg.velocity[2] = np.nan #self.vz[self.delta_t]
                     trajectory_msg.yaw = 0.0
                     self.delta_t += 1
+                    self.delta_t_goal = 0
                     self.publisher_trajectory.publish(trajectory_msg)
                 
                 elif np.linalg.norm(self.vehicle_position[2]-self.xf[2]) < 0.5:
