@@ -23,6 +23,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'taean = test_nodes.taean_controller:main',
             'obstacle_speaker = test_nodes.obstacle_speaker:main',
             'gimbal_test = test_nodes.gimbal_test:main',
             'mc_test_00 = test_nodes.mc_test_00_arm:main',
@@ -39,7 +40,7 @@ setup(
             'yolo_test_05 = test_nodes.yolo_test_05_yolo_apriltag:main',
             'yolo_test_06 = test_nodes.yolo_test_06_yolo_slow:main',
             'fw_test_01 = test_nodes.fw_test_01_waypoints:main',
-            'fw_test_02 = test_nodes.fw_test_02_smooth_waypoints:main',
+            'fw_test_02 = test_nodes.fw_test_02_pturn:main',
         ],
     },
 )

@@ -25,10 +25,7 @@ from std_msgs.msg import Bool
 # import math, numpy
 import math
 import numpy as np
-<<<<<<< HEAD
-=======
 import serial
->>>>>>> 9235959d08daac0ca00d9209142209fbd1693342
 
 class VehicleController(Node):
 
@@ -89,13 +86,10 @@ class VehicleController(Node):
         self.time_checker = 0
         self.step_count = 0
 
-<<<<<<< HEAD
-=======
         # gimbal control
         self.ser = serial.Serial('/dev/ttyGimbal', 115200)
         self.gimbal_pitch = 0.0
 
->>>>>>> 9235959d08daac0ca00d9209142209fbd1693342
         # add by chaewon. used for obstacle detection
         self.obstacle_label = ''
         self.obstacle_x = 0
@@ -147,8 +141,8 @@ class VehicleController(Node):
         self.vehicle_phase_publisher = self.create_publisher(
             VehiclePhase, '/vehicle_phase', qos_profile
         )
-	# add by jinate
- 	self.autolanding_publisher = self.create_publisher(
+        # add by jinate
+        self.autolanding_publisher = self.create_publisher(
             Bool, 'auto_land_on', 10
         )
         """
@@ -159,11 +153,8 @@ class VehicleController(Node):
         self.main_timer = self.create_timer(0.05, self.main_timer_callback)
         # add by chaewon
         self.vehicle_phase_publisher_timer = self.create_timer(0.5, self.vehicle_phase_publisher_callback)
-<<<<<<< HEAD
-=======
         # gimbal control
         self.gimbal_timer = self.create_timer(0.5, self.gimbal_control_callback)
->>>>>>> 9235959d08daac0ca00d9209142209fbd1693342
         
         print("Successfully executed: vehicle_controller")
         print("Please switch to offboard mode.")
@@ -233,8 +224,6 @@ class VehicleController(Node):
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             self.home_position = self.pos # set home position
             self.phase = 0
-<<<<<<< HEAD
-=======
 
     # gimbal control
     def gimbal_control_callback(self):
@@ -248,7 +237,6 @@ class VehicleController(Node):
         data_crc = crc_xmodem(data_fix + data_var)
         packet = bytearray(data_fix + data_var + data_crc)
         self.ser.write(packet)
->>>>>>> 9235959d08daac0ca00d9209142209fbd1693342
     
     def main_timer_callback(self):
         if self.phase == 0:
@@ -454,8 +442,6 @@ class VehicleController(Node):
         msg.pitch_rate = float('nan')
         msg.yaw_rate = float('nan')
         self.gimbal_publisher.publish(msg)
-<<<<<<< HEAD
-=======
 
 """
 Gimbal Control
@@ -479,7 +465,6 @@ def to_twos_complement(number: int) -> bytes:
 
 def format_bytearray(byte_array: bytearray) -> str:
     return ' '.join(f'{byte:02x}' for byte in byte_array)
->>>>>>> 9235959d08daac0ca00d9209142209fbd1693342
     
 def main(args = None):
     rclpy.init(args=args)

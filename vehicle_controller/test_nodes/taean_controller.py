@@ -1,3 +1,5 @@
+# TODO: FIX!!
+
 __author__ = "Kyungjun Oh"
 __contact__ = "frankok@snu.ac.kr"
 
@@ -43,22 +45,24 @@ class VehicleController(Node):
         """
         self.takeoff_height = 30.0                          # Parameter: MIS_TAKEOFF_ALT
 
-        self.bezier_threshold_speed = 0.1
-        self.mc_start_speed = 0.001
-        self.mc_end_speed = 0.001
+        self.mc_speed = 5.0
         self.fw_speed = 17.0
-        self.slow_yaw_speed = 0.05                          # 0.05 rad = 2.86 deg
+        self.slow_yaw_speed = 0.02                          # 0.02 rad = 1.15 deg
         self.fast_yaw_speed = 0.1                           # 0.1 rad = 5.73 deg
-        
+
         self.mc_acceptance_radius = 0.3
         self.fw_acceptance_radius = 20.0
         self.acceptance_heading_angle = 0.01                # 0.01 rad = 0.57 deg
 
         self.transition_end = 5.0                           # 5.0 seconds       # TODO: Do we really need this??
-        
-        self.failsafe_min_z = 35.0
+        self.back_transition_ratio = 0.400                  # WP6 to WP7 internal divide ratio
+
+        self.pturn_radius = 50.0
+        self.num_pturn_points = 5
+
+        self.failsafe_min_z = 8.0
         self.failsafe_max_z_vel = 3.5
-        self.failsafe_max_xy_error = 30.0
+        self.failsafe_max_xy_error = 20.0
         self.failsafe_max_z_error = 10.0
 
         """
@@ -79,17 +83,15 @@ class VehicleController(Node):
         """
         3. Load waypoints (GPS)
         """
-        self.declare_parameter('num_WP', 0)
-        self.num_WP = self.get_parameter('num_WP').value
 
         self.WP = [np.array([0.0, 0.0, -self.takeoff_height])]
         self.WP_gps = [np.array([0.0, 0.0, 0.0])]
         self.home_position = np.array([0.0, 0.0, 0.0])
 
-        for i in range(1, self.num_WP + 1):
+        for i in range(1, 8):
             self.declare_parameter(f'gps_WP{i}', None)
 
-        for i in range(1, self.num_WP + 1):
+        for i in range(1, 8):
             wp_position_gps = self.get_parameter(f'gps_WP{i}').value
             if wp_position_gps is not None:
                 self.WP_gps.append(np.array(wp_position_gps))
@@ -121,11 +123,18 @@ class VehicleController(Node):
         1               yaw_align
         2               transition_forward
         2               FW_line
+        3               FW_pturn        # WP1 -> WP2 -> pturn -> (WP2') -> WP3
         3               FW_line
-        ....            ....
-        num_WP          FW_line
-        num_WP + 1      transition_backward     (betwen WP_{num_WP} and home)
-        num_WP + 1      MC
+        4               FW_pturn        # WP2 -> WP3 -> pturn -> (WP3') -> WP4
+        4               FW_line
+        5               FW_line
+        6               FW_pturn        # WP4 -> WP5 -> pturn -> WP6 -> WP7
+        6               FW_line
+        7               FW_line
+        7               transition_backward
+        7               MC
+        8               yaw_align
+        8               MC
         -2              MC
         """
 
@@ -144,17 +153,14 @@ class VehicleController(Node):
         self.yaw = float('nan')
 
         # waypoints
-        self.previous_goal = None
-        self.current_goal = None
+        self.previous_goal_pos = None
+        self.current_goal_pos = None
+        self.current_goal_vel = None
         self.mission_yaw = float('nan')
 
-        # Bezier curve
-        self.num_bezier = 0
-        self.bezier_counter = 0
-        self.bezier_points = None
-        self.declare_parameter('vmax', 5)
-        self.vmax = self.get_parameter('vmax').value # receive from yaml file
-        self.bezier_minimum_time = 3.0
+        # pturn
+        self.pturn_pos_trajectory = []
+        self.pturn_vel_trajectory = []
 
         # counter
         self.transition_count = 0
@@ -210,42 +216,13 @@ class VehicleController(Node):
 
     def convert_global_to_local_waypoint(self, home_position_gps):
         self.home_position = self.pos # set home position
-        for i in range(1, self.num_WP + 1):
+        for i in range(1, 8):
             # WP_gps = [lat, lon, rel_alt]
             wp_position = p3d.geodetic2ned(self.WP_gps[i][0], self.WP_gps[i][1], self.WP_gps[i][2] + home_position_gps[2],
                                             home_position_gps[0], home_position_gps[1], home_position_gps[2])
             wp_position = np.array(wp_position)
             self.WP.append(wp_position)
         self.WP.append(np.array([0.0, 0.0, -self.takeoff_height]))
-
-    def bezier_curve(self, xi, xf):
-        # total time calculation
-        total_time = np.linalg.norm(xf - xi) / self.vmax * 2      # Assume that average velocity = vmax / 2
-        if total_time <= self.bezier_minimum_time:
-            total_time = self.bezier_minimum_time
-
-        direction = np.array((xf - xi) / np.linalg.norm(xf - xi))
-        vf = self.mc_end_speed * direction
-        if np.linalg.norm(self.vel) < self.bezier_threshold_speed:
-            vi = self.mc_start_speed * direction
-        else:
-            vi = self.vel
-        print(f'vi: {vi}, vf: {vf}')
-
-        point1 = xi
-        point2 = xi + vi * total_time / 3 # * total_time
-        point3 = xf - vf * total_time / 3 # * total_time
-        point4 = xf
-        print(f'point1: {point1}, point2: {point2}, point3: {point3}, point4: {point4}\n')
-
-        # Bezier curve
-        self.num_bezier = int(total_time / self.time_period)
-        bezier = np.linspace(0, 1, self.num_bezier).reshape(-1, 1)
-        bezier = point4 * bezier**3 +                             \
-                3 * point3 * bezier**2 * (1 - bezier) +           \
-                3 * point2 * bezier**1 * (1 - bezier)**2 +        \
-                1 * point1 * (1 - bezier)**3
-        return bezier
         
     def get_bearing_to_next_waypoint(self, now, next):
         now2d = now[0:2]
@@ -253,6 +230,66 @@ class VehicleController(Node):
         direction = (next2d - now2d) / np.linalg.norm(next2d - now2d) # NED frame
         yaw = np.arctan2(direction[1], direction[0])
         return yaw
+
+    def generate_pturn_trajectory(self, pointA, pointB, pointC, pointD):
+        # pointA -> pointB -> pturn -> pointC -> pointD
+        pointA2d, pointAz = pointA[0:2], pointA[2]
+        pointB2d, pointBz = pointB[0:2], pointB[2]
+        pointC2d, pointCz = pointC[0:2], pointC[2]
+        pointD2d, pointDz = pointD[0:2], pointD[2]
+
+        # pturn direction
+        u = (pointB2d - pointA2d) / np.linalg.norm(pointB2d - pointA2d)
+        v = (pointC2d - pointD2d) / np.linalg.norm(pointC2d - pointD2d)
+        alpha = np.arccos(np.dot(u, v)) / 2     # half angle between u and v
+        clockwise = np.linalg.det([u, v]) < 0
+
+        # intersect point
+        intersect_point = pointB2d
+        if np.linalg.norm(pointB2d - pointC2d) > 1e-1:  # pointB2d != pointC2d
+            # pointA2d, pointB2d and pointC2d, pointD2d line intersection
+            a1, a2, a3 = pointA2d[1] - pointB2d[1], pointB2d[0] - pointA2d[0], pointA2d[1] * pointB2d[0] - pointA2d[0] * pointB2d[1]
+            b1, b2, b3 = pointC2d[1] - pointD2d[1], pointD2d[0] - pointC2d[0], pointC2d[1] * pointD2d[0] - pointC2d[0] * pointD2d[1]
+            det = a1 * b2 - a2 * b1
+            intersect_point = np.array([(a3 * b2 - a2 * b3) / det, (a1 * b3 - a3 * b1) / det])
+        
+        # pturn center, contact point
+        pturn_center = intersect_point + self.pturn_radius / np.sin(alpha) * (u + v) / np.linalg.norm(u + v)
+        contact_point1 = intersect_point + self.pturn_radius / np.tan(alpha) * u
+        contact_point2 = intersect_point + self.pturn_radius / np.tan(alpha) * v
+        center_to_contact = contact_point1 - pturn_center
+        start_angle = np.arctan2(center_to_contact[1], center_to_contact[0])
+
+        # pturn 2d trajectory
+        if clockwise:
+            theta = np.linspace(start_angle, start_angle - (np.pi + 2 * alpha), self.num_pturn_points - 1)
+            pturn_points_2d = pturn_center + self.pturn_radius * np.array([np.cos(theta), np.sin(theta)]).T
+            pturn_vel_2d = self.pturn_radius * (np.pi + 2 * alpha) * np.array([np.sin(theta), -np.cos(theta)]).T
+        else:
+            theta = np.linspace(start_angle, start_angle + (np.pi + 2 * alpha), self.num_pturn_points - 1)
+            pturn_points_2d = pturn_center + self.pturn_radius * np.array([np.cos(theta), np.sin(theta)]).T
+            pturn_vel_2d = self.pturn_radius * (np.pi + 2 * alpha) * np.array([-np.sin(theta), np.cos(theta)]).T
+        pturn_points_2d = np.append(pturn_points_2d, pointC2d.reshape(1, -1), axis=0)
+        pturn_vel_2d = np.append(pturn_vel_2d, pturn_vel_2d[-1].reshape(1, -1), axis=0)
+
+        # pturn z trajectory
+        horizontal_dist = np.linalg.norm(contact_point1 - pointB2d) + np.linspace(0, self.pturn_radius * (np.pi + 2 * alpha), self.num_pturn_points - 1)
+        horizontal_dist = np.append(horizontal_dist, horizontal_dist[-1] + np.linalg.norm(pointC2d - contact_point2))
+        if np.abs(pointCz - pointDz) > 1e-1:  # pointCz != pointDz
+            c_to_d = np.linalg.norm(pointC2d - pointD2d)
+            pointCz = (pointBz * c_to_d + pointDz * horizontal_dist[-1]) / (c_to_d + horizontal_dist[-1])
+        # pointBz -> pointCz (proportional to horizontal_dist)
+        pturn_points_z = (pointCz - pointBz) / horizontal_dist[-1] * horizontal_dist + pointBz
+        # pturn_vel_z = (pointCz - pointBz) / horizontal_dist[-1] * self.pturn_radius * (np.pi + 2 * alpha) * np.ones(self.num_pturn_points)
+        pturn_vel_z = (pointCz - pointBz) / horizontal_dist[-1] * self.pturn_radius * (np.pi + 2 * alpha) * np.ones(self.num_pturn_points - 1)
+        pturn_vel_z = np.append(pturn_vel_z, 0)     # for safety
+
+        # pturn trajectory
+        pturn_points = [np.array([pturn_points_2d[i][0], pturn_points_2d[i][1], pturn_points_z[i]]) for i in range(self.num_pturn_points)]
+        pturn_vel = [np.array([pturn_vel_2d[i][0], pturn_vel_2d[i][1], pturn_vel_z[i]]) for i in range(self.num_pturn_points)]
+        pturn_vel = [self.fw_speed * vel / np.linalg.norm(vel) for vel in pturn_vel]
+
+        return pturn_points, pturn_vel
 
     """
     Callback functions for the timers
@@ -268,7 +305,7 @@ class VehicleController(Node):
     
     def failsafe_timer_callback(self):
         """failsafe timer"""
-        if self.phase > 1 and self.phase < self.num_WP + 1:
+        if self.phase > 0:
             if np.abs(self.pos[2]) < self.failsafe_min_z:
                 self.print("Failsafe Trigger: under minimum altitude!!!")
                 self.print(f'Altitude: {self.pos[2]}\n')
@@ -281,8 +318,8 @@ class VehicleController(Node):
                     self.print("Vehicle is ascending too fast!!!")
                 self.print(f'Z Velocity: {self.vel[2]}\n')
             
-            corridor = self.current_goal - self.previous_goal
-            closest_point = np.dot(self.pos - self.previous_goal, corridor) / np.dot(corridor, corridor) * corridor + self.previous_goal
+            corridor = self.current_goal_pos - self.previous_goal_pos
+            closest_point = np.dot(self.pos - self.previous_goal_pos, corridor) / np.dot(corridor, corridor) * corridor + self.previous_goal_pos
             xy_error = np.linalg.norm(self.pos[:2] - closest_point[:2])
             z_error = np.abs(self.pos[2] - closest_point[2])
 
@@ -294,7 +331,6 @@ class VehicleController(Node):
                 if z_error > self.failsafe_max_z_error:
                     self.print("Failsafe Trigger: max z error exceeded!!!")
                     self.print(f'Z Error: {z_error}\n')
-
     
     def main_timer_callback(self):
         """Callback function for the timer."""
@@ -305,8 +341,8 @@ class VehicleController(Node):
             elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_TAKEOFF:
                 print("Takeoff requested\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
-                self.previous_goal = self.current_goal
-                self.current_goal = self.WP[0]
+                self.previous_goal_pos = self.current_goal_pos
+                self.current_goal_pos = self.WP[0]
                 self.phase = 0
                 
         elif self.phase == 0:
@@ -319,29 +355,23 @@ class VehicleController(Node):
                     param2=6.0  # offboard
                 )
             elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-                # vehicle command send repeatedly until the vehicle is in offboard mode
+                # vehicle command send repeatedly until the vehicle is in offboard mode")
                 self.print("Change to offboard mode completed")
-                self.print("Moving to WP1\n")
-                self.previous_goal = self.pos
-                self.current_goal = self.WP[1]
-                self.bezier_counter = 0
-                self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal)
+                self.print("WP1 requested\n")
+                self.previous_goal_pos = self.current_goal_pos
+                self.current_goal_pos = self.WP[1]
                 self.phase = 1
 
         elif self.phase == 1:
             if self.subphase == "MC":
-                if self.bezier_counter == self.num_bezier - int(1 / self.time_period) - 1:
-                    self.publish_trajectory_setpoint(position_sp=self.current_goal)
-                else:
-                    self.publish_trajectory_setpoint(position_sp=self.bezier_points[self.bezier_counter + int(1 / self.time_period)])
-                    self.bezier_counter += 1
-
-                if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
+                self.publish_trajectory_setpoint(
+                    position_sp = self.pos + (self.current_goal_pos - self.pos) / np.linalg.norm(self.current_goal_pos - self.pos) * self.mc_speed) # slow mc flight
+                if np.linalg.norm(self.pos - self.current_goal_pos) < self.mc_acceptance_radius:
                     self.print(f'WP{self.phase} reached')
                     self.print("Yaw alignment requested\n")
-                    self.previous_goal = self.current_goal
-                    self.current_goal = self.WP[2]
-                    self.mission_yaw = self.get_bearing_to_next_waypoint(self.pos, self.current_goal)
+                    self.previous_goal_pos = self.current_goal_pos
+                    self.current_goal_pos = self.WP[2]
+                    self.mission_yaw = self.get_bearing_to_next_waypoint(self.pos, self.current_goal_pos)
                     self.subphase = "yaw_align"
 
             elif self.subphase == "yaw_align":
@@ -396,7 +426,7 @@ class VehicleController(Node):
                     if self.transition_count >= self.transition_end / self.time_period:
                         if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_POSCTL:
                             self.print("Transition to FW completed")
-                            self.print("Change to Offboard mode requested\n")
+                            self.print("Offboard mode requested\n")
                             self.publish_vehicle_command(
                                 VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
                                 param1=1.0, # main mode
@@ -405,7 +435,8 @@ class VehicleController(Node):
                         elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
                             # vehicle command send repeatedly until the vehicle is in offboard mode
                             self.print("Change to Offboard mode completed")
-                            self.print("Moving to WP2\n")
+                            self.print("WP2 requested\n")
+                            self.current_goal_vel = self.fw_speed * (self.current_goal_pos - self.previous_goal_pos) / np.linalg.norm(self.current_goal_pos - self.previous_goal_pos)
                             self.subphase = "FW_line"
                         else:
                             self.print("Return to Offboard mode Critical Error Detected!!!\n")
@@ -413,38 +444,136 @@ class VehicleController(Node):
                     
             elif self.subphase == "FW_line":
                 self.publish_trajectory_setpoint(
-                    position_sp = self.current_goal,
-                    velocity_sp = self.fw_speed * (self.current_goal - self.previous_goal) / np.linalg.norm(self.current_goal - self.previous_goal)
+                    position_sp = self.current_goal_pos,
+                    velocity_sp = self.current_goal_vel
                 )
-                if np.linalg.norm(self.pos - self.current_goal) < self.fw_acceptance_radius:
+                if np.linalg.norm(self.pos - self.current_goal_pos) < self.fw_acceptance_radius:
                     self.print(f'WP{self.phase} reached')
-                    self.print("Moving to WP3\n")
-                    self.previous_goal = self.current_goal
-                    self.current_goal = self.WP[3]
+                    self.print("Pturn trajectory requested\n")
+                    self.pturn_pos_trajectory, self.pturn_vel_trajectory = self.generate_pturn_trajectory(self.WP[1], self.WP[2], self.WP[2], self.WP[3])
+                    self.pturn_count = 0
+                    self.previous_goal_pos = self.current_goal_pos
+                    self.current_goal_pos = self.pturn_pos_trajectory[self.pturn_count]
+                    self.current_goal_vel = self.pturn_vel_trajectory[self.pturn_count]
                     self.phase = 3
-            
-        elif self.phase > 2 and self.phase < self.num_WP:
-            if self.subphase == "FW_line":
+                    self.subphase = "FW_pturn"
+        
+        elif self.phase == 3:
+            if self.subphase == "FW_pturn":
                 self.publish_trajectory_setpoint(
-                    position_sp = self.current_goal,
-                    velocity_sp = self.fw_speed * (self.current_goal - self.previous_goal) / np.linalg.norm(self.current_goal - self.previous_goal)
+                    position_sp = self.current_goal_pos,
+                    velocity_sp = self.current_goal_vel
                 )
-                if np.linalg.norm(self.pos - self.current_goal) < self.fw_acceptance_radius:
-                    self.print(f'WP{self.phase} reached')
-                    self.print(f'Moving to WP{self.phase + 1}\n')
-                    self.previous_goal = self.current_goal
-                    self.current_goal = self.WP[self.phase + 1]
-                    self.phase += 1
+                if np.linalg.norm(self.pos - self.current_goal_pos) < self.fw_acceptance_radius:
+                    self.print(f'Pturn point {self.pturn_count + 1} reached\n')
+                    if self.pturn_count < self.num_pturn_points - 1:
+                        self.pturn_count += 1
+                        self.previous_goal_pos = self.current_goal_pos
+                        self.current_goal_pos = self.pturn_pos_trajectory[self.pturn_count]
+                        self.current_goal_vel = self.pturn_vel_trajectory[self.pturn_count]
+                    else:
+                        self.print("WP3 requested\n")
+                        self.previous_goal_pos = self.current_goal_pos
+                        self.current_goal_pos = self.WP[3]
+                        self.current_goal_vel = self.fw_speed * (self.current_goal_pos - self.previous_goal_pos) / np.linalg.norm(self.current_goal_pos - self.previous_goal_pos)
+                        self.subphase = "FW_line"
 
-        elif self.phase == self.num_WP:
+            elif self.subphase == "FW_line":
+                self.publish_trajectory_setpoint(
+                    position_sp = self.current_goal_pos,
+                    velocity_sp = self.current_goal_vel
+                )
+                if np.linalg.norm(self.pos - self.current_goal_pos) < self.fw_acceptance_radius:
+                    self.print(f'WP{self.phase} reached')
+                    self.print("Pturn trajectory requested\n")
+                    self.pturn_pos_trajectory, self.pturn_vel_trajectory = self.generate_pturn_trajectory(self.WP[2], self.WP[3], self.WP[3], self.WP[4])
+                    self.pturn_count = 0
+                    self.previous_goal_pos = self.current_goal_pos
+                    self.current_goal_pos = self.pturn_pos_trajectory[self.pturn_count]
+                    self.current_goal_vel = self.pturn_vel_trajectory[self.pturn_count]
+                    self.phase = 4
+                    self.subphase = "FW_pturn"
+        
+        elif self.phase == 4:
+            if self.subphase == "FW_pturn":
+                self.publish_trajectory_setpoint(
+                    position_sp = self.current_goal_pos,
+                    velocity_sp = self.current_goal_vel
+                )
+                if np.linalg.norm(self.pos - self.current_goal_pos) < self.fw_acceptance_radius:
+                    self.print(f'Pturn point {self.pturn_count + 1} reached\n')
+                    if self.pturn_count < self.num_pturn_points - 1:
+                        self.pturn_count += 1
+                        self.previous_goal_pos = self.current_goal_pos
+                        self.current_goal_pos = self.pturn_pos_trajectory[self.pturn_count]
+                        self.current_goal_vel = self.pturn_vel_trajectory[self.pturn_count]
+                    else:
+                        self.print("WP4 requested\n")
+                        self.previous_goal_pos = self.current_goal_pos
+                        self.current_goal_pos = self.WP[4]
+                        self.current_goal_vel = self.fw_speed * (self.current_goal_pos - self.previous_goal_pos) / np.linalg.norm(self.current_goal_pos - self.previous_goal_pos)
+                        self.subphase = "FW_line"
+            
+            elif self.subphase == "FW_line":
+                self.publish_trajectory_setpoint(
+                    position_sp = self.current_goal_pos,
+                    velocity_sp = self.current_goal_vel
+                )
+                if np.linalg.norm(self.pos - self.current_goal_pos) < self.fw_acceptance_radius:
+                    self.print(f'WP{self.phase} reached')
+                    self.print("WP5 requested\n")
+                    self.previous_goal_pos = self.current_goal_pos
+                    self.current_goal_pos = self.WP[5]
+                    self.current_goal_vel = self.fw_speed * (self.current_goal_pos - self.previous_goal_pos) / np.linalg.norm(self.current_goal_pos - self.previous_goal_pos)
+                    self.phase = 5
+            
+        elif self.phase == 5:
             if self.subphase == "FW_line":
                 self.publish_trajectory_setpoint(
-                    position_sp = self.current_goal,
-                    velocity_sp = self.fw_speed * (self.current_goal - self.previous_goal) / np.linalg.norm(self.current_goal - self.previous_goal)
+                    position_sp = self.current_goal_pos,
+                    velocity_sp = self.current_goal_vel
                 )
-                if np.linalg.norm(self.pos - self.current_goal) < self.fw_acceptance_radius:
+                if np.linalg.norm(self.pos - self.current_goal_pos) < self.fw_acceptance_radius:
+                    self.print(f'WP{self.phase} reached\n')
+                    self.print("Pturn trajectory requested\n")
+                    self.pturn_pos_trajectory, self.pturn_vel_trajectory = self.generate_pturn_trajectory(self.WP[4], self.WP[5], self.WP[6], self.WP[7])
+                    self.pturn_count = 0
+                    self.previous_goal_pos = self.current_goal_pos
+                    self.current_goal_pos = self.pturn_pos_trajectory[self.pturn_count]
+                    self.current_goal_vel = self.pturn_vel_trajectory[self.pturn_count]
+                    self.phase = 6
+                    self.subphase = "FW_pturn"
+        
+        elif self.phase == 6:
+            if self.subphase == "FW_pturn":
+                self.publish_trajectory_setpoint(
+                    position_sp = self.current_goal_pos,
+                    velocity_sp = self.current_goal_vel
+                )
+                if np.linalg.norm(self.pos - self.current_goal_pos) < self.fw_acceptance_radius:
+                    self.print(f'Pturn point {self.pturn_count + 1} reached\n')
+                    if self.pturn_count < self.num_pturn_points - 1:
+                        self.pturn_count += 1
+                        self.previous_goal_pos = self.current_goal_pos
+                        self.current_goal_pos = self.pturn_pos_trajectory[self.pturn_count]
+                        self.current_goal_vel = self.pturn_vel_trajectory[self.pturn_count]
+                    else:
+                        self.print(f'WP{self.phase} reached')
+                        self.print("WP6 ~ WP7 requested\n")
+                        self.previous_goal_pos = self.current_goal_pos
+                        self.current_goal_pos = self.WP[6] * (1 - self.back_transition_ratio) + self.WP[7] * self.back_transition_ratio     # internal divide point
+                        self.current_goal_vel = self.fw_speed * (self.current_goal_pos - self.previous_goal_pos) / np.linalg.norm(self.current_goal_pos - self.previous_goal_pos)
+                        self.phase = 7
+                        self.subphase = "FW_line"
+        
+        elif self.phase == 7:
+            if self.subphase == "FW_line":
+                self.publish_trajectory_setpoint(
+                    position_sp = self.current_goal_pos,
+                    velocity_sp = self.current_goal_vel
+                )
+                if np.linalg.norm(self.pos - self.current_goal_pos) < self.fw_acceptance_radius:
                     if self.vtol_vehicle_status.vehicle_vtol_state == VtolVehicleStatus.VEHICLE_VTOL_STATE_FW:
-                        self.print("Back transition point reached")
                         self.print("Transition to MC requested\n")
                         self.publish_vehicle_command(
                             VehicleCommand.VEHICLE_CMD_DO_VTOL_TRANSITION, 
@@ -454,37 +583,52 @@ class VehicleController(Node):
                     elif self.vtol_vehicle_status.vehicle_vtol_state == VtolVehicleStatus.VEHICLE_VTOL_STATE_TRANSITION_TO_MC:
                         # vehicle command send repeatedly until the vehicle is in back transition state
                         self.print("Transitioning to MC mode...\n")
-                        self.phase = self.num_WP + 1
                         self.subphase = "transition_backward"
                     else:
                         self.print("Transition Backward Critical Error Detected!!!\n")
-        
-        elif self.phase == self.num_WP + 1:
-            if self.subphase == "transition_backward":
+
+            elif self.subphase == "transition_backward":
                 if self.vtol_vehicle_status.vehicle_vtol_state == VtolVehicleStatus.VEHICLE_VTOL_STATE_MC:
                     self.print("Transition to MC completed")
-                    self.print("Moving to home\n")
-                    self.previous_goal = self.pos
-                    self.current_goal = self.WP[self.num_WP + 1]
-                    self.bezier_counter = 0
-                    self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal)
+                    self.print("WP7 requested\n")
+                    self.previous_goal_pos = self.current_goal_pos
+                    self.current_goal_pos = self.WP[7]
+                    self.current_goal_vel = None
                     self.subphase = "MC"
             
             elif self.subphase == "MC":
-                if self.bezier_counter == self.num_bezier - int(1 / self.time_period) - 1:
-                    self.publish_trajectory_setpoint(position_sp=self.current_goal)
-                else:
-                    self.publish_trajectory_setpoint(position_sp=self.bezier_points[self.bezier_counter + int(1 / self.time_period)])
-                    self.bezier_counter += 1
-
-                if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
+                if self.subphase == "MC":
+                    self.publish_trajectory_setpoint(
+                        position_sp = self.pos + (self.current_goal_pos - self.pos) / np.linalg.norm(self.current_goal_pos - self.pos) * self.mc_speed) # slow mc flight
+                    if np.linalg.norm(self.pos - self.current_goal_pos) < self.mc_acceptance_radius:
+                        self.print(f'WP{self.phase} reached')
+                        self.print("Yaw alignment requested\n")
+                        self.previous_goal_pos = self.current_goal_pos
+                        self.current_goal_pos = self.WP[8]
+                        self.mission_yaw = self.get_bearing_to_next_waypoint(self.pos, self.current_goal_pos)
+                        self.phase = 8
+                        self.subphase = "yaw_align"
+        
+        elif self.phase == 8:
+            if self.subphase == "yaw_align":
+                self.publish_trajectory_setpoint(
+                    position_sp = self.pos,
+                    yaw_sp = self.yaw + np.sign(np.sin(self.mission_yaw - self.yaw)) * self.fast_yaw_speed)   # fast smooth yaw alignment
+                if np.abs(self.yaw - self.mission_yaw) < self.acceptance_heading_angle:
+                    self.print("Yaw alignment completed")
+                    self.print("Home position requested\n")
+                    self.subphase = "MC"
+                
+            elif self.subphase == "MC":
+                self.publish_trajectory_setpoint(
+                        position_sp = self.pos + (self.current_goal_pos - self.pos) / np.linalg.norm(self.current_goal_pos - self.pos) * self.mc_speed) # slow mc flight
+                if np.linalg.norm(self.pos - self.current_goal_pos) < self.mc_acceptance_radius:
                     if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-                        self.print("Home reached")
                         self.print("Landing requested\n")
                         self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
                     elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LAND:
                         # vehicle command send repeatedly until the vehicle is in landing state
-                        self.phase = -2            
+                        self.phase = -2
 
         else:
             self.print("Mission completed")
@@ -499,8 +643,9 @@ class VehicleController(Node):
             self.print(f'Mode: {self.vehicle_status.nav_state}, VTOL state: {self.vtol_vehicle_status.vehicle_vtol_state}')
             self.print(f'Position: {self.pos}')
             self.print(f'Velocity: {self.vel}')
-            self.print(f'Previous goal: {self.previous_goal}')
-            self.print(f'Current goal: {self.current_goal}\n')
+            self.print(f'Previous goal: {self.previous_goal_pos}')
+            self.print(f'Current goal: {self.current_goal_pos}')
+            self.print(f'Current goal velocity: {self.current_goal_vel}\n')
             self.logging_count = 0
 
 

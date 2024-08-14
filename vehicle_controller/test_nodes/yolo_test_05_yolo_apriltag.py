@@ -305,7 +305,7 @@ class VehicleController(Node):
             if distance < self.mc_acceptance_radius:
                 self.phase = 5
         elif self.phase == 5:
-             # add by jintae
+            # add by jintae
             ALmsg = Bool()
             ALmsg.data = True
             self.autolanding_publisher.publish(ALmsg) #auto landing on
