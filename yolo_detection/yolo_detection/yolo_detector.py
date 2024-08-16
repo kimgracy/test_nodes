@@ -42,6 +42,7 @@ class YoloDetector(Node):
         self.subscriber_phase = self.create_subscription(VehiclePhase, '/vehicle_phase', self.phase_callback, qos_profile)
         # create phase
         self.phase = '0'
+        self.subphase = '0'
         
         # create cv_bridge instance
         self.bridge = CvBridge()
@@ -79,51 +80,35 @@ class YoloDetector(Node):
         print(labels)
         print('cords', type(cords))
         print(cords)
-        print('-----')
         
 
         # draw bounding box in frame & publish obstacle message
-
-        max_confidence = 0
-        max_index = -1
-
         for i in range(len(labels)):
             row = cords[i]
-
-            if row[4] > max_confidence:
-
-                max_confidence = row[4]
-                max_index = i
-
-        if max_index != -1 :
-            row = cords[max_index]
-            print(f'max_index: {max_index}, confidence: {row[4]}')
-            
             if row[4] >= 0.3:
                 x1, y1, x2, y2 = int(row[0] * frame.shape[1]), int(row[1] * frame.shape[0]), int(row[2] * frame.shape[1]), int(row[3] * frame.shape[0])
-                label = self.model.names[int(labels[max_index])]
+                label = self.model.names[int(labels[i])]
                 print(f'label: {label}')
                 x_center = (x1 + x2) / 2
                 y_center = (y1 + y2) / 2
-                print(f'x center: {x_center}, y center: {y_center}')
                 print(f'Height: {abs(y1-y2)}, Label: {label}')
-                print('')
                 
-                # publish obstacle message
-                #if ((self.phase == '8' or '8.1' or '8.2' or '8.3' or '8.4') and (abs(y1-y2) >= 450) and (label == 'ladder-truck')) :
-                if ((abs(y1-y2) >= 450) and (label == 'ladder-truck')) :
-                    obstacle_msg = YoloObstacle()
-                    obstacle_msg.label = label
-                    obstacle_msg.x = x_center
-                    obstacle_msg.y = y_center
-                    self.publisher_obstacle.publish(obstacle_msg)
+                # publish obstacle message and draw bounding box
+                if ((abs(y1-y2) >= 450) and (label == 'ladder-truck' or label == 'class4')):
+                    # publish obstacle message when phase is 8
+                    if self.phase == '8':
+                        obstacle_msg = YoloObstacle()
+                        obstacle_msg.label = label
+                        obstacle_msg.x = x_center
+                        obstacle_msg.y = y_center
+                        self.publisher_obstacle.publish(obstacle_msg)
                     
                     # draw bounding box and label
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                     cv2.putText(frame, f'{label} {row[4]:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
 
-        # check if it's time to publish target image
+        # check if it's time to save target image
         if (self.phase == '3'):
             current_time = time.time()
             if current_time - self.last_capture_time >= self.timer_period:
@@ -131,12 +116,13 @@ class YoloDetector(Node):
                 self.last_capture_time = current_time
 
 
-        # display frame
+        # display frame to monitor
         cv2.imshow('YOLOv5 Detection', frame)
         
 
         '''
         MJPG streamer
+        '''
         '''
         # 프레임을 파일로 저장 (MJPG-streamer가 읽을 수 있도록)
         tmp_file = '/tmp/stream.jpg'
@@ -156,7 +142,7 @@ class YoloDetector(Node):
         # break whan keyinturrupt occurs
         if cv2.waitKey(1) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
-            
+        '''
             
             
     
@@ -178,6 +164,7 @@ class YoloDetector(Node):
     def phase_callback(self, msg):
         # get vehicle phase
         self.phase = msg.phase
+        self.subphase = msg.subphases
 
 
 
