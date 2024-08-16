@@ -11,7 +11,6 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPo
 from px4_msgs.msg import VehicleStatus
 from px4_msgs.msg import VehicleLocalPosition
 from px4_msgs.msg import VehicleGlobalPosition
-from px4_msgs.msg import VtolVehicleStatus
 """msgs for publishing"""
 from px4_msgs.msg import VehicleCommand
 from px4_msgs.msg import OffboardControlMode
@@ -25,7 +24,7 @@ import pymap3d as p3d
 from datetime import datetime
 
 class VehicleController(Node):
-    
+
     def __init__(self):
         super().__init__('vehicle_controller')
 
@@ -43,7 +42,8 @@ class VehicleController(Node):
         1. Constants
         """
         self.takeoff_height = 5.0                          # Parameter: MIS_TAKEOFF_ALT
-        self.mc_speed = 5.0
+        self.mc_start_speed = 0.1
+        self.mc_end_speed = 0.1
         self.mc_acceptance_radius = 0.3
 
         """
@@ -63,55 +63,58 @@ class VehicleController(Node):
             self.logger = logging.getLogger(__name__)
 
         """
-        3. Load waypoints (GPS)
+        2. Load waypoints (GPS)
         """
-        self.declare_parameter('num_WP', 0)
-        self.num_WP = self.get_parameter('num_WP').value
-
         self.WP = [np.array([0.0, 0.0, -self.takeoff_height])]
         self.WP_gps = [np.array([0.0, 0.0, 0.0])]
         self.home_position = np.array([0.0, 0.0, 0.0])
 
-        for i in range(1, self.num_WP + 1):
-            self.declare_parameter(f'gps_WP{i}', None)
+        self.declare_parameters(
+            namespace='',
+            parameters=[
+                ('vmax', None),
+                ('gps_WP1', None),
+                ('gps_WP2', None)
+            ])
 
-        for i in range(1, self.num_WP + 1):
+        for i in range(1, 3):
             wp_position_gps = self.get_parameter(f'gps_WP{i}').value
-            if wp_position_gps is not None:
-                self.WP_gps.append(np.array(wp_position_gps))
+            self.WP_gps.append(np.array(wp_position_gps))
 
         """
-        4. Phase and subphase
+        3. State variables
         """
         # phase description
         # -2 : after flight
         # -1 : before flight
-        # 0 : mission mode
-        # 1 : change to offboard mode & moving to home position
+        # 0 : takeoff and arm
+        # i >= 1 : moving toward WP_i
         self.phase = -1
 
-        """
-        5. State variables
-        """
         # vehicle status
         self.vehicle_status = VehicleStatus()
-        self.vtol_vehicle_status = VtolVehicleStatus()
         self.vehicle_local_position = VehicleLocalPosition()
 
-        # vehicle position, velocity, yaw
-        self.pos = np.array([0.0, 0.0, 0.0])        # local
-        self.pos_gps = np.array([0.0, 0.0, 0.0])    # global
-        self.vel = np.array([0.0, 0.0, 0.0])
-        self.yaw = float('nan')
-
+        # vehicle position
+        self.pos = np.array([0.0, 0.0, 0.0])
+        self.pos_gps = np.array([0.0, 0.0, 0.0])
+        
         # waypoints
+        self.previous_goal = None
         self.current_goal = None
 
-        # counter
+        # Bezier curve
+        self.num_bezier = 0
+        self.bezier_counter = 0
+        self.bezier_points = None
+        self.vmax = self.get_parameter('vmax').value # receive from yaml file
+        self.bezier_minimum_time = 3.0
+
         self.logging_count = 0
+        self.time_checker = 0
 
         """
-        6. Create Subscribers
+        4. Create Subscribers
         """
         self.vehicle_status_subscriber = self.create_subscription(
             VehicleStatus, '/fmu/out/vehicle_status', self.vehicle_status_callback, qos_profile
@@ -122,12 +125,9 @@ class VehicleController(Node):
         self.Vehicle_Global_Position_subscriber = self.create_subscription(
             VehicleGlobalPosition, '/fmu/out/vehicle_global_position', self.vehicle_global_position_callback, qos_profile
         )
-        self.vtol_vehicle_status_subscriber = self.create_subscription(
-            VtolVehicleStatus, '/fmu/out/vtol_vehicle_status', self.vtol_vehicle_status_callback, qos_profile
-        )
 
         """
-        7. Create Publishers
+        5. Create Publishers
         """
         self.vehicle_command_publisher = self.create_publisher(
             VehicleCommand, '/fmu/in/vehicle_command', qos_profile
@@ -140,15 +140,16 @@ class VehicleController(Node):
         )
 
         """
-        8. timer setup
+        6. timer setup
         """
         self.time_period = 0.05     # 20 Hz
         self.offboard_heartbeat = self.create_timer(self.time_period, self.offboard_heartbeat_callback)
         self.main_timer = self.create_timer(self.time_period, self.main_timer_callback)
-
-        self.print("Successfully executed: vehicle_controller")
-        self.print("Please switch to mission mode\n")
-
+        
+        print("Successfully executed: vehicle_controller")
+        print("Please switch to offboard mode.\n")
+        
+    
     """
     Services
     """
@@ -156,72 +157,103 @@ class VehicleController(Node):
         print(*args, **kwargs)
         if self.logging:
             self.logger.info(*args, **kwargs)
-
+    
     def convert_global_to_local_waypoint(self, home_position_gps):
         self.home_position = self.pos # set home position
-        for i in range(1, self.num_WP + 1):
+        for i in range(1, 1):
             # WP_gps = [lat, lon, rel_alt]
             wp_position = p3d.geodetic2ned(self.WP_gps[i][0], self.WP_gps[i][1], self.WP_gps[i][2] + home_position_gps[2],
                                             home_position_gps[0], home_position_gps[1], home_position_gps[2])
             wp_position = np.array(wp_position)
             self.WP.append(wp_position)
         self.WP.append(np.array([0.0, 0.0, -self.takeoff_height]))
-        self.print(self.WP)
-        
+
+    def bezier_curve(self, xi, xf, vi, vf):
+        # control points
+        total_time = np.linalg.norm(xf - xi) / self.vmax * 2      # Assume that average velocity = vmax / 2
+        if total_time <= self.bezier_minimum_time:
+            total_time = self.bezier_minimum_time
+        direction = np.array((xf - xi) / np.linalg.norm(xf - xi))
+        point1 = xi
+        point2 = xi + vi * direction * total_time / 3 * total_time
+        point3 = xf - vf * direction * total_time / 3 * total_time
+        point4 = xf
+
+        # Bezier curve
+        self.num_bezier = int(total_time / self.time_period)
+        bezier = np.linspace(0, 1, self.num_bezier).reshape(-1, 1)
+        bezier = point4 * bezier**3 +                             \
+                3 * point3 * bezier**2 * (1 - bezier) +           \
+                3 * point2 * bezier**1 * (1 - bezier)**2 +        \
+                1 * point1 * (1 - bezier)**3
+        return bezier
+    
 
     """
     Callback functions for the timers
     """
     def offboard_heartbeat_callback(self):
         """offboard heartbeat signal"""
-        self.publish_offboard_control_mode(position = True)
-    
-    def main_timer_callback(self):
-        """Callback function for the timer."""
-        if self.phase == -1:
-            if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
-                and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                self.print("Mission mode requested\n")
-                self.convert_global_to_local_waypoint(self.pos_gps)
-                self.phase = 0
-                
-        elif self.phase == 0:
-            if np.linalg.norm(self.pos - self.WP[7]) < self.mc_acceptance_radius * 10:
-                if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                    self.print("WP7 reached")
-                    self.print("Offboard control mode requested\n")
-                    self.publish_vehicle_command(
-                        VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
-                        param1=1.0, # main mode
-                        param2=6.0  # offboard mode
-                    )
-                elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-                    self.print("Offboard control mode activated")
-                    self.print("Landing requested\n")
-                    self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
-                elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LAND:
-                    # vehicle command send repeatedly until the vehicle is in landing state
-                    self.print("Landing...\n")
-                    self.phase = -2
+        self.publish_offboard_control_mode(position=True)
 
+    def main_timer_callback(self):
+        if self.phase == -1:
+            if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                self.print("Takeoff requested\n")
+                self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_TAKEOFF)
+                self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
+            elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_TAKEOFF:
+                self.print("Takeoff started\n")
+                self.convert_global_to_local_waypoint(self.pos_gps)
+                self.previous_goal = self.current_goal
+                self.current_goal = self.WP[0]
+                self.phase = 0
+
+        elif self.phase == 0:
+            if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LOITER:
+                self.print("Takeoff completed")
+                self.print("Offboard control mode requested\n")
+                self.publish_vehicle_command(
+                    VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
+                    param1=1.0, # main mode
+                    param2=6.0  # offboard
+                )
+            elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                # vehicle command send repeatedly until the vehicle is in offboard mode")
+                self.print("Change to offboard mode completed")
+                self.print("stay in takeoff position for 8 seconds\n")
+                self.current_goal = self.pos
+                self.phase = 1
+
+        elif self.phase == 1:
+            self.time_checker += self.time_period
+            self.publish_trajectory_setpoint(position_sp=self.current_goal)
+            if self.time_checker >= 8.0:
+                self.time_checker = 0
+                self.print("Start Landing.\n")
+                self.phase = 2
+                
+        elif self.phase == 2:
+            self.print("Landing requested\n")
+            self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
+            self.phase = -2
+        
         else:
             self.print("Mission completed")
             self.print("Congratulations!\n")
             self.destroy_node()
             rclpy.shutdown()
+        
 
         # FOR DEBUGGING
         self.logging_count += 1
         if self.logging_count % 20 == 0:        # TODO: 10Hz logging
-            if self.phase >= 0:
-                self.print(f'norm: {np.linalg.norm(self.pos - self.WP[7])}, radius: {self.mc_acceptance_radius * 10}')
             self.print(f'Phase: {self.phase}')
-            self.print(f'Mode: {self.vehicle_status.nav_state}, VTOL state: {self.vtol_vehicle_status.vehicle_vtol_state}')
+            self.print(f'Mode: {self.vehicle_status.nav_state}')
             self.print(f'Position: {self.pos}')
-            self.print(f'Velocity: {self.vel}')
+            self.print(f'Previous goal: {self.previous_goal}')
             self.print(f'Current goal: {self.current_goal}\n')
             self.logging_count = 0
-
 
     """
     Callback functions for subscribers.
@@ -233,19 +265,14 @@ class VehicleController(Node):
     def vehicle_local_position_callback(self, msg):
         self.vehicle_local_position = msg
         self.pos = np.array([msg.x, msg.y, msg.z])
-        self.vel = np.array([msg.vx, msg.vy, msg.vz])
-        self.yaw = msg.heading
         if self.phase != -1:
             # set position relative to the home position after takeoff
             self.pos = self.pos - self.home_position
-    
+
     def vehicle_global_position_callback(self, msg):
         self.vehicle_global_position = msg
         self.pos_gps = np.array([msg.lat, msg.lon, msg.alt])
 
-    def vtol_vehicle_status_callback(self, msg):
-        self.vtol_vehicle_status = msg
-    
     """
     Functions for publishing topics.
     """
@@ -286,10 +313,9 @@ class VehicleController(Node):
         msg.position = list( kwargs.get("position_sp", np.nan * np.zeros(3)) + self.home_position )
         msg.velocity = list( kwargs.get("velocity_sp", np.nan * np.zeros(3)) )
         msg.yaw = kwargs.get("yaw_sp", float('nan'))
-        msg.yawspeed = kwargs.get("yaw_speed", float('nan'))
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
-
+    
 def main(args = None):
     rclpy.init(args=args)
 

@@ -21,6 +21,7 @@ import os
 import logging
 import numpy as np
 import pymap3d as p3d
+from datetime import datetime
 
 class VehicleController(Node):
 
@@ -44,6 +45,19 @@ class VehicleController(Node):
         self.mc_start_speed = 0.1
         self.mc_end_speed = 0.1
         self.mc_acceptance_radius = 0.3
+
+        self.declare_parameter('logging', True)
+        self.logging = self.get_parameter('logging').value
+        
+        if self.logging:
+            log_dir = os.path.join(os.getcwd(), 'src/vehicle_controller/test_nodes/log')
+            os.makedirs(log_dir, exist_ok=True)
+            current_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+            log_file = os.path.join(log_dir,  f'log_{current_time}.txt')
+            logging.basicConfig(filename=log_file,
+                                level=logging.INFO,
+                                format='%(asctime)s - %(message)s')
+            self.logger = logging.getLogger(__name__)
 
         """
         2. Load waypoints (GPS)
@@ -81,6 +95,7 @@ class VehicleController(Node):
         # vehicle position
         self.pos = np.array([0.0, 0.0, 0.0])
         self.pos_gps = np.array([0.0, 0.0, 0.0])
+        self.vel = np.array([0.0, 0.0, 0.0])
         
         # waypoints
         self.previous_goal = None
@@ -92,6 +107,8 @@ class VehicleController(Node):
         self.bezier_points = None
         self.vmax = self.get_parameter('vmax').value # receive from yaml file
         self.bezier_minimum_time = 3.0
+
+        self.logging_count = 0
 
         """
         4. Create Subscribers
@@ -126,13 +143,18 @@ class VehicleController(Node):
         self.offboard_heartbeat = self.create_timer(self.time_period, self.offboard_heartbeat_callback)
         self.main_timer = self.create_timer(self.time_period, self.main_timer_callback)
         
-        print("Successfully executed: vehicle_controller")
-        print("Please switch to offboard mode.\n")
+        self.print("Successfully executed: vehicle_controller")
+        self.print("Please switch to offboard mode.\n")
         
     
     """
     Services
     """   
+    def print(self, *args, **kwargs):
+        print(*args, **kwargs)
+        if self.logging:
+            self.logger.info(*args, **kwargs)
+
     def convert_global_to_local_waypoint(self, home_position_gps):
         self.home_position = self.pos # set home position
         for i in range(1, 3):
@@ -142,6 +164,7 @@ class VehicleController(Node):
             wp_position = np.array(wp_position)
             self.WP.append(wp_position)
         self.WP.append(np.array([0.0, 0.0, -self.takeoff_height]))
+        self.print(f'Converted waypoints: {self.WP}\n')
 
     def bezier_curve(self, xi, xf, vi, vf):
         # control points
@@ -174,10 +197,11 @@ class VehicleController(Node):
     def main_timer_callback(self):
         if self.phase == -1:
             if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                self.print("Takeoff requested\n")
                 self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_TAKEOFF)
                 self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_TAKEOFF:
-                print("Takeoff requested\n")
+                self.print("Takeoff started\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
                 self.previous_goal = self.current_goal
                 self.current_goal = self.WP[0]
@@ -185,8 +209,8 @@ class VehicleController(Node):
 
         elif self.phase == 0:
             if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LOITER:
-                print("Takeoff completed")
-                print("Offboard control mode requested\n")
+                self.print("Takeoff completed")
+                self.print("Offboard control mode requested\n")
                 self.publish_vehicle_command(
                     VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
                     param1=1.0, # main mode
@@ -194,12 +218,13 @@ class VehicleController(Node):
                 )
             elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
                 # vehicle command send repeatedly until the vehicle is in offboard mode")
-                print("Change to offboard mode completed")
-                print("WP1 requested\n")
+                self.print("Change to offboard mode completed")
+                self.print("WP1 requested\n")
                 self.previous_goal = self.current_goal
                 self.current_goal = self.WP[1]
                 self.bezier_counter = 0
                 self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.mc_start_speed, self.mc_end_speed)
+                self.print(f'Bezier points: {self.bezier_points}\n')
                 self.phase = 1
 
         elif self.phase == 1:
@@ -210,12 +235,13 @@ class VehicleController(Node):
                 self.bezier_counter += 1
                 
             if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
-                print("WP1 reached")
-                print("WP2 requested\n")
+                self.print("WP1 reached")
+                self.print("WP2 requested\n")
                 self.previous_goal = self.current_goal
                 self.current_goal = self.WP[2]
                 self.bezier_counter = 0
                 self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.mc_start_speed, self.mc_end_speed)
+                self.print(f'Bezier points: {self.bezier_points}\n')
                 self.phase = 2
 
         elif self.phase == 2:
@@ -226,12 +252,13 @@ class VehicleController(Node):
                 self.bezier_counter += 1
                 
             if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
-                print("WP2 reached")
-                print("Home position requested\n")
+                self.print("WP2 reached")
+                self.print("Home position requested\n")
                 self.previous_goal = self.current_goal
                 self.current_goal = self.WP[3]
                 self.bezier_counter = 0
                 self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.mc_start_speed, self.mc_end_speed)
+                self.print(f'Bezier points: {self.bezier_points}\n')
                 self.phase = 3
 
         elif self.phase == 3:
@@ -242,16 +269,28 @@ class VehicleController(Node):
                 self.bezier_counter += 1
                 
             if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
-                print("Home position reached")
-                print("Landing requested\n")
+                self.print("Home position reached")
+                self.print("Landing requested\n")
                 self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
                 self.phase = -2
         
         else:
-            print("Mission completed")
-            print("Congratulations!\n")
+            self.print("Mission completed")
+            self.print("Congratulations!\n")
             self.destroy_node()
             rclpy.shutdown()
+
+        # FOR DEBUGGING
+        self.logging_count += 1
+        if self.logging_count % 20 == 0:        # TODO: 10Hz logging
+            self.print(f'Phase: {self.phase}')
+            self.print(f'Mode: {self.vehicle_status.nav_state}')
+            self.print(f'Position: {self.pos}')
+            self.print(f'Velocity: {self.vel}')
+            self.print(f'Vel abs: {np.linalg.norm(self.vel)}')
+            self.print(f'Current goal: {self.current_goal}')
+            self.print(f'Bezier counter: {self.bezier_counter}\n')
+            self.logging_count = 0
 
     """
     Callback functions for subscribers.
@@ -263,6 +302,7 @@ class VehicleController(Node):
     def vehicle_local_position_callback(self, msg):
         self.vehicle_local_position = msg
         self.pos = np.array([msg.x, msg.y, msg.z])
+        self.vel = np.array([msg.vx, msg.vy, msg.vz])
         if self.phase != -1:
             # set position relative to the home position after takeoff
             self.pos = self.pos - self.home_position
