@@ -22,7 +22,6 @@ import os
 import logging
 import numpy as np
 import pymap3d as p3d
-from datetime import datetime
 
 class VehicleController(Node):
     
@@ -47,9 +46,20 @@ class VehicleController(Node):
         self.bezier_threshold_speed = 0.1
         self.mc_start_speed = 0.001
         self.mc_end_speed = 0.001
-
+        self.fw_speed = 17.0
+        self.slow_yaw_speed = 0.05                          # 0.05 rad = 2.86 deg
+        self.fast_yaw_speed = 0.1                           # 0.1 rad = 5.73 deg
+        
         self.mc_acceptance_radius = 0.3
-        self.offboard_acceptance_radius = 5
+        self.fw_acceptance_radius = 20.0
+        self.acceptance_heading_angle = 0.01                # 0.01 rad = 0.57 deg
+
+        self.transition_end = 5.0                           # 5.0 seconds       # TODO: Do we really need this??
+        
+        self.failsafe_min_z = 35.0
+        self.failsafe_max_z_vel = 3.5
+        self.failsafe_max_xy_error = 30.0
+        self.failsafe_max_z_error = 10.0
 
         """
         2. Logging setup
@@ -60,8 +70,7 @@ class VehicleController(Node):
         if self.logging:
             log_dir = os.path.join(os.getcwd(), 'src/vehicle_controller/test_nodes/log')
             os.makedirs(log_dir, exist_ok=True)
-            current_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-            log_file = os.path.join(log_dir,  f'log_{current_time}.txt')
+            log_file = os.path.join(log_dir, f'log_{self.get_clock().now().nanoseconds}.txt')
             logging.basicConfig(filename=log_file,
                                 level=logging.INFO,
                                 format='%(asctime)s - %(message)s')
@@ -91,9 +100,34 @@ class VehicleController(Node):
         # phase description
         # -2 : after flight
         # -1 : before flight
-        # 0 : mission mode
-        # 1 : change to offboard mode & moving to home position
+        # 0 : takeoff and arm
+        # i >= 1 : moving toward WP_i
         self.phase = -1
+
+        # subphase description
+        # MC : multicopter
+        # FW_line: fixed-wing line
+        # FW_pturn: fixed-wing pturn
+        # transition_forward : transition from MC to FW
+        # transition_backward : transition from FW to MC
+        # yaw_align : align yaw to the next waypoint
+        self.subphase = "MC"
+
+        """
+        self.phase      self.subphase
+        -1              MC
+        0               MC
+        1               MC
+        1               yaw_align
+        2               transition_forward
+        2               FW_line
+        3               FW_line
+        ....            ....
+        num_WP          FW_line
+        num_WP + 1      transition_backward     (betwen WP_{num_WP} and home)
+        num_WP + 1      MC
+        -2              MC
+        """
 
         """
         5. State variables
@@ -110,7 +144,9 @@ class VehicleController(Node):
         self.yaw = float('nan')
 
         # waypoints
+        self.previous_goal = None
         self.current_goal = None
+        self.mission_yaw = float('nan')
 
         # Bezier curve
         self.num_bezier = 0
@@ -121,6 +157,7 @@ class VehicleController(Node):
         self.bezier_minimum_time = 3.0
 
         # counter
+        self.transition_count = 0
         self.logging_count = 0
 
         """
@@ -157,10 +194,11 @@ class VehicleController(Node):
         """
         self.time_period = 0.05     # 20 Hz
         self.offboard_heartbeat = self.create_timer(self.time_period, self.offboard_heartbeat_callback)
+        self.failsafe_timer = self.create_timer(self.time_period, self.failsafe_timer_callback)
         self.main_timer = self.create_timer(self.time_period, self.main_timer_callback)
 
-        self.print("Successfully executed: mission_test_01")
-        self.print("Please switch to mission mode\n")
+        self.print("Successfully executed: vehicle_controller")
+        self.print("Please switch to offboard mode\n")
 
     """
     Services
@@ -179,8 +217,7 @@ class VehicleController(Node):
             wp_position = np.array(wp_position)
             self.WP.append(wp_position)
         self.WP.append(np.array([0.0, 0.0, -self.takeoff_height]))
-        self.print(self.WP)
-        
+
     def bezier_curve(self, xi, xf):
         # total time calculation
         total_time = np.linalg.norm(xf - xi) / self.vmax * 2      # Assume that average velocity = vmax / 2
@@ -209,58 +246,106 @@ class VehicleController(Node):
                 3 * point2 * bezier**1 * (1 - bezier)**2 +        \
                 1 * point1 * (1 - bezier)**3
         return bezier
+        
+    def get_bearing_to_next_waypoint(self, now, next):
+        now2d = now[0:2]
+        next2d = next[0:2]
+        direction = (next2d - now2d) / np.linalg.norm(next2d - now2d) # NED frame
+        yaw = np.arctan2(direction[1], direction[0])
+        return yaw
 
     """
     Callback functions for the timers
     """
     def offboard_heartbeat_callback(self):
         """offboard heartbeat signal"""
-        self.publish_offboard_control_mode(position = True)
+        if self.vtol_vehicle_status.vehicle_vtol_state == VtolVehicleStatus.VEHICLE_VTOL_STATE_MC:
+            self.publish_offboard_control_mode(position = True)
+        elif self.vtol_vehicle_status.vehicle_vtol_state == VtolVehicleStatus.VEHICLE_VTOL_STATE_FW:
+            self.publish_offboard_control_mode(position = True, velocity = True)
+        else: # transition
+            self.publish_offboard_control_mode(position = True, velocity = True)
+    
+    def failsafe_timer_callback(self):
+        """failsafe timer"""
+        if self.phase > 1 and self.phase < self.num_WP + 1:
+            if np.abs(self.pos[2]) < self.failsafe_min_z:
+                self.print("Failsafe Trigger: under minimum altitude!!!")
+                self.print(f'Altitude: {self.pos[2]}\n')
+                
+            if np.abs(self.vel[2]) > self.failsafe_max_z_vel:
+                self.print("Failsafe Trigger: max z velocity exceeded!!!")
+                if self.vel[2] > 0:
+                    self.print("Vehicle is descending too fast!!!")
+                else:
+                    self.print("Vehicle is ascending too fast!!!")
+                self.print(f'Z Velocity: {self.vel[2]}\n')
+            
+            corridor = self.current_goal - self.previous_goal
+            closest_point = np.dot(self.pos - self.previous_goal, corridor) / np.dot(corridor, corridor) * corridor + self.previous_goal
+            xy_error = np.linalg.norm(self.pos[:2] - closest_point[:2])
+            z_error = np.abs(self.pos[2] - closest_point[2])
+
+            if self.subphase == "FW_line" or self.subphase == "FW_pturn" or self.subphase == "MC":
+                if xy_error > self.failsafe_max_xy_error:
+                    self.print("Failsafe Trigger: max xy error exceeded!!!")
+                    self.print(f'XY Error: {xy_error}\n')
+                
+                if z_error > self.failsafe_max_z_error:
+                    self.print("Failsafe Trigger: max z error exceeded!!!")
+                    self.print(f'Z Error: {z_error}\n')
+
     
     def main_timer_callback(self):
         """Callback function for the timer."""
         if self.phase == -1:
-            if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
-                and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                self.print("Mission mode requested\n")
-                self.convert_global_to_local_waypoint(self.pos_gps)
+            if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_TAKEOFF)
+                self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
+            elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_TAKEOFF:
+                print("Takeoff requested\n")
                 self.phase = 0
-                
+
         elif self.phase == 0:
-            if np.linalg.norm(self.pos - self.WP[7]) < self.mc_acceptance_radius * 10:
-                if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                    self.print("WP7 reached")
+            if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LOITER:
+                self.print("Takeoff completed")
+                self.print("Offboard control mode requested\n")
+                self.publish_vehicle_command(
+                    VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
+                    param1=1.0, # main mode
+                    param2=6.0  # offboard
+                )
+                self.transition_count = 0
+            elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                self.transition_count += 1
+                if self.transition_count >= self.transition_end / self.time_period:
+                    self.print("Position control mode requested\n")
+                    self.publish_vehicle_command(
+                    VehicleCommand.VEHICLE_CMD_DO_SET_MODE,
+                    param1=1.0, # main mode
+                    param2=3.0  # position ctl
+                )
+            elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_POSCTL:
+                self.print("Position control mode completed\n")
+                self.phase = 1
+                self.transition_count = 0
+        
+        elif self.phase == 1:
+            if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_POSCTL:
+                self.transition_count += 1
+                if self.transition_count >= self.transition_end / self.time_period:
                     self.print("Offboard control mode requested\n")
                     self.publish_vehicle_command(
                         VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
                         param1=1.0, # main mode
-                        param2=6.0  # offboard mode
+                        param2=6.0  # offboard
                     )
-                elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-                    self.print("Offboard control mode activated")
-                    self.print("Moving to home position\n")
-                    self.previous_goal = self.pos
-                    self.current_goal = self.WP[8]
-                    self.bezier_counter = 0
-                    self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal)
-                    self.print(f'Bezier points: {self.bezier_points}\n')
-                    self.phase = 1
-
-        elif self.phase == 1:
-            if self.bezier_counter == self.num_bezier - int(1 / self.time_period) - 1:
-                self.publish_trajectory_setpoint(position_sp=self.current_goal)
-            else:
-                self.publish_trajectory_setpoint(position_sp=self.bezier_points[self.bezier_counter + int(1 / self.time_period)])
-                self.bezier_counter += 1
-
-            if np.linalg.norm(self.pos - self.current_goal) < self.offboard_acceptance_radius:
-                if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-                    self.print("Home reached")
-                    self.print("Landing requested\n")
-                    self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
-                elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LAND:
-                    # vehicle command send repeatedly until the vehicle is in landing state
-                    self.phase = -2     
+            elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                self.print("Landing requested\n")
+                self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
+            elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LAND:
+                # vehicle command send repeatedly until the vehicle is in landing state
+                self.phase = -2
 
         else:
             self.print("Mission completed")
@@ -270,15 +355,13 @@ class VehicleController(Node):
 
         # FOR DEBUGGING
         self.logging_count += 1
-        if self.logging_count % 20 == 0:        # TODO: 10Hz logging
-            self.print(f'Phase: {self.phase}')
+        if self.logging_count % 100 == 0:        # TODO: 10Hz logging
+            self.print(f'Phase: {self.phase}, Subphase: {self.subphase}')
             self.print(f'Mode: {self.vehicle_status.nav_state}, VTOL state: {self.vtol_vehicle_status.vehicle_vtol_state}')
             self.print(f'Position: {self.pos}')
             self.print(f'Velocity: {self.vel}')
-            self.print(f'Current goal: {self.current_goal}')
-            if self.phase >= 0:
-                self.print(f'norm: {np.linalg.norm(self.pos - self.WP[7])}')
-            self.print(f'Bezier counter: {self.bezier_counter}\n')
+            self.print(f'Previous goal: {self.previous_goal}')
+            self.print(f'Current goal: {self.current_goal}\n')
             self.logging_count = 0
 
 

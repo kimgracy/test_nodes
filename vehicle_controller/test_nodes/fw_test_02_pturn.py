@@ -209,7 +209,7 @@ class VehicleController(Node):
         self.failsafe_timer = self.create_timer(self.time_period, self.failsafe_timer_callback)
         self.main_timer = self.create_timer(self.time_period, self.main_timer_callback)
 
-        self.print("Successfully executed: vehicle_controller")
+        self.print("Successfully executed: fw_test_02")
         self.print("Please switch to offboard mode\n")
 
     """

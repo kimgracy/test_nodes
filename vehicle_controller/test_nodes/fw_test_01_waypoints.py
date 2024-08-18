@@ -197,7 +197,7 @@ class VehicleController(Node):
         self.failsafe_timer = self.create_timer(self.time_period, self.failsafe_timer_callback)
         self.main_timer = self.create_timer(self.time_period, self.main_timer_callback)
 
-        self.print("Successfully executed: vehicle_controller")
+        self.print("Successfully executed: fw_test_01")
         self.print("Please switch to offboard mode\n")
 
     """
@@ -326,6 +326,7 @@ class VehicleController(Node):
                 self.current_goal = self.WP[1]
                 self.bezier_counter = 0
                 self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal)
+                self.print(f'Bezier points: {self.bezier_points}\n')
                 self.phase = 1
 
         elif self.phase == 1:
@@ -468,6 +469,7 @@ class VehicleController(Node):
                     self.current_goal = self.WP[self.num_WP + 1]
                     self.bezier_counter = 0
                     self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal)
+                    self.print(f'Bezier points: {self.bezier_points}\n')
                     self.subphase = "MC"
             
             elif self.subphase == "MC":
@@ -494,13 +496,14 @@ class VehicleController(Node):
 
         # FOR DEBUGGING
         self.logging_count += 1
-        if self.logging_count % 100 == 0:        # TODO: 10Hz logging
+        if self.logging_count % 20 == 0:        # TODO: 10Hz logging
             self.print(f'Phase: {self.phase}, Subphase: {self.subphase}')
             self.print(f'Mode: {self.vehicle_status.nav_state}, VTOL state: {self.vtol_vehicle_status.vehicle_vtol_state}')
             self.print(f'Position: {self.pos}')
             self.print(f'Velocity: {self.vel}')
             self.print(f'Previous goal: {self.previous_goal}')
-            self.print(f'Current goal: {self.current_goal}\n')
+            self.print(f'Current goal: {self.current_goal}')
+            self.print(f'Bezier counter: {self.bezier_counter}\n')
             self.logging_count = 0
 
 
