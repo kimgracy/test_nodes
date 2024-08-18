@@ -42,9 +42,14 @@ class VehicleController(Node):
         """
         1. Constants
         """
-        self.takeoff_height = 5.0                          # Parameter: MIS_TAKEOFF_ALT
-        self.mc_speed = 5.0
+        self.takeoff_height = 30.0                          # Parameter: MIS_TAKEOFF_ALT
+        
+        self.bezier_threshold_speed = 0.1
+        self.mc_start_speed = 0.1
+        self.mc_end_speed = 0.1
+        
         self.mc_acceptance_radius = 0.3
+        self.offboard_acceptance_radius = 5
 
         """
         2. Logging setup
@@ -107,6 +112,14 @@ class VehicleController(Node):
         # waypoints
         self.current_goal = None
 
+        # Bezier curve
+        self.num_bezier = 0
+        self.bezier_counter = 0
+        self.bezier_points = None
+        self.declare_parameter('vmax', 5)
+        self.vmax = self.get_parameter('vmax').value # receive from yaml file
+        self.bezier_minimum_time = 3.0
+
         # counter
         self.logging_count = 0
 
@@ -146,7 +159,7 @@ class VehicleController(Node):
         self.offboard_heartbeat = self.create_timer(self.time_period, self.offboard_heartbeat_callback)
         self.main_timer = self.create_timer(self.time_period, self.main_timer_callback)
 
-        self.print("Successfully executed: vehicle_controller")
+        self.print("Successfully executed: mission_test_01")
         self.print("Please switch to mission mode\n")
 
     """
@@ -166,7 +179,36 @@ class VehicleController(Node):
             wp_position = np.array(wp_position)
             self.WP.append(wp_position)
         self.WP.append(np.array([0.0, 0.0, -self.takeoff_height]))
-        self.print(self.WP)
+        self.print(f'WP: {self.WP}\n')
+
+    def bezier_curve(self, xi, xf):
+        # total time calculation
+        total_time = np.linalg.norm(xf - xi) / self.vmax * 2      # Assume that average velocity = vmax / 2
+        if total_time <= self.bezier_minimum_time:
+            total_time = self.bezier_minimum_time
+
+        direction = np.array((xf - xi) / np.linalg.norm(xf - xi))
+        vf = self.mc_end_speed * direction
+        if np.linalg.norm(self.vel) < self.bezier_threshold_speed:
+            vi = self.mc_start_speed * direction
+        else:
+            vi = self.vel
+        print(f'vi: {vi}, vf: {vf}')
+
+        point1 = xi
+        point2 = xi + vi * total_time / 3 # * total_time
+        point3 = xf - vf * total_time / 3 # * total_time
+        point4 = xf
+        print(f'point1: {point1}, point2: {point2}, point3: {point3}, point4: {point4}\n')
+
+        # Bezier curve
+        self.num_bezier = int(total_time / self.time_period)
+        bezier = np.linspace(0, 1, self.num_bezier).reshape(-1, 1)
+        bezier = point4 * bezier**3 +                             \
+                3 * point3 * bezier**2 * (1 - bezier) +           \
+                3 * point2 * bezier**1 * (1 - bezier)**2 +        \
+                1 * point1 * (1 - bezier)**3
+        return bezier
         
 
     """
@@ -186,7 +228,7 @@ class VehicleController(Node):
                 self.phase = 0
                 
         elif self.phase == 0:
-            if np.linalg.norm(self.pos - self.WP[7]) < self.mc_acceptance_radius * 10:
+            if np.linalg.norm(self.pos - self.WP[7]) < self.offboard_acceptance_radius:
                 if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
                     self.print("WP7 reached")
                     self.print("Offboard control mode requested\n")
@@ -197,12 +239,29 @@ class VehicleController(Node):
                     )
                 elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
                     self.print("Offboard control mode activated")
+                    self.print("Moving to home position\n")
+                    self.previous_goal = self.pos
+                    self.current_goal = self.WP[8]
+                    self.bezier_counter = 0
+                    self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal)
+                    self.print(f'Bezier points: {self.bezier_points}\n')
+                    self.phase = 1
+        
+        elif self.phase == 1:
+            if self.bezier_counter == self.num_bezier - int(1 / self.time_period) - 1:
+                self.publish_trajectory_setpoint(position_sp=self.current_goal)
+            else:
+                self.publish_trajectory_setpoint(position_sp=self.bezier_points[self.bezier_counter + int(1 / self.time_period)])
+                self.bezier_counter += 1
+
+            if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
+                if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                    self.print("Home reached")
                     self.print("Landing requested\n")
                     self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
                 elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LAND:
                     # vehicle command send repeatedly until the vehicle is in landing state
-                    self.print("Landing...\n")
-                    self.phase = -2
+                    self.phase = -2  
 
         else:
             self.print("Mission completed")
@@ -213,13 +272,14 @@ class VehicleController(Node):
         # FOR DEBUGGING
         self.logging_count += 1
         if self.logging_count % 20 == 0:        # TODO: 10Hz logging
-            if self.phase >= 0:
-                self.print(f'norm: {np.linalg.norm(self.pos - self.WP[7])}, radius: {self.mc_acceptance_radius * 10}')
             self.print(f'Phase: {self.phase}')
+            if self.phase >= 0:
+                self.print(f'norm: {np.linalg.norm(self.pos - self.WP[7])}')
             self.print(f'Mode: {self.vehicle_status.nav_state}, VTOL state: {self.vtol_vehicle_status.vehicle_vtol_state}')
             self.print(f'Position: {self.pos}')
             self.print(f'Velocity: {self.vel}')
-            self.print(f'Current goal: {self.current_goal}\n')
+            self.print(f'Current goal: {self.current_goal}')
+            self.print(f'Bezier counter: {self.bezier_counter}\n')
             self.logging_count = 0
 
 
