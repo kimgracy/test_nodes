@@ -407,6 +407,18 @@ class VehicleController(Node):
                     else:
                         self.publish_trajectory_setpoint(position_sp=self.bezier_points[self.bezier_counter])
                         self.bezier_counter += 1
+                    
+                    if (self.obstacle_label != '') and (self.obstacle_x<340 and self.obstacle_x>300):
+                        self.ladder_detected += 1
+                        print(f'Detected obstacle again: {self.obstacle_label}. {self.ladder_detected} times')
+                        self.obstacle_label = ''
+                        if self.ladder_detected >= 10:
+                            self.ladder_detected = 0
+                            self.previous_goal = self.pos
+                            self.current_goal = self.pos + np.array([(1.0)*np.cos(self.yaw+(np.pi/2)), (1.0)*np.sin(self.yaw+(np.pi/2)), 0.0])
+                            self.bezier_counter = 0
+                            self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.mc_start_speed, self.mc_end_speed, 2)
+                            self.subphase = 'pause'
 
         elif self.phase == 9:
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
