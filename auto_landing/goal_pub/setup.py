@@ -27,7 +27,8 @@ setup(
             'filter = goal_pub.filter:main',
             'filter_2 = goal_pub.filter_2:main',
             'depth = goal_pub.depth:main',
-            'gimbal = goal_pub.gimbal_controller:main'
+            'gimbal = goal_pub.gimbal_controller:main',
+            'topic_name = goal_pub.topic_name:main',
         ],
     },
 )

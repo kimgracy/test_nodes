@@ -99,7 +99,7 @@ class TagPublisher(Node):
             if self.last_tag[0]:
                 tag_world = self.last_tag
                 tag_world_msg = Float32MultiArray()
-                tag_world_msg.data = [tag_world[0], tag_world[1], tag_world[2], 0., 0., 0.5] # in order of xf and vf
+                tag_world_msg.data = [tag_world[0]+0.5, tag_world[1], tag_world[2]+0.4, 0., 0., 0.5] # in order of xf and vf
             
                 self.tag_world_pub.publish(tag_world_msg)
             
