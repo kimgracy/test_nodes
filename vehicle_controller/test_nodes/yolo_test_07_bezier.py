@@ -145,7 +145,7 @@ class VehicleController(Node):
 
         # Gimbal
         self.time_checker = 0
-        self.ser = serial.Serial('/dev/ttyGimbal', 115200)
+        # self.ser = serial.Serial('/dev/ttyGimbal', 115200)        ######################################################################################
         self.gimbal_pitch = 0.0
         self.gimbal_counter = 0
         self.pitch_index = 0
@@ -283,7 +283,7 @@ class VehicleController(Node):
         data_var = to_twos_complement(10 * int(self.gimbal_pitch))
         data_crc = crc_xmodem(data_fix + data_var)
         packet = bytearray(data_fix + data_var + data_crc)
-        self.ser.write(packet)
+        # self.ser.write(packet)          ######################################################################################
 
     def main_timer_callback(self):
         if self.phase == -1:
@@ -563,6 +563,32 @@ class VehicleController(Node):
         msg.yaw = kwargs.get("yaw_sp", float('nan'))
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
+
+
+"""
+Functions for Gimbal Control
+"""
+
+def crc_xmodem(data: bytes) -> bytes:
+    crc = 0
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = (crc << 1) ^ 0x1021
+            else:
+                crc <<= 1
+            crc &= 0xFFFF
+    return crc.to_bytes(2, 'little')
+
+def to_twos_complement(number: int) -> bytes:
+    if number < 0:
+        number &= 0xFFFF
+    return number.to_bytes(2, 'little')
+
+def format_bytearray(byte_array: bytearray) -> str:
+    return ' '.join(f'{byte:02x}' for byte in byte_array)   
+
     
 def main(args = None):
     rclpy.init(args=args)
