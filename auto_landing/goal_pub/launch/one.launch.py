@@ -39,5 +39,8 @@ def generate_launch_description():
                 ],
                 output="screen"
             ),
+            ExecuteProcess(
+                cmd=["ros2", "run", "goal_pub", "topic_name"], output="screen"
+            ),
         ]
     )

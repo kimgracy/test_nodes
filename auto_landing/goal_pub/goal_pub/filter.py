@@ -15,14 +15,14 @@ class Filter(Node):
             10
         )
         self.publisher = self.create_publisher(Float32MultiArray, 'bezier_waypoint', 10)
-        self.raw_values = deque([], maxlen=30)  # 최대 크기를 지정하여 자동으로 관리
+        self.raw_values = deque([], maxlen=10)  # 최대 크기를 지정하여 자동으로 관리
         self.raw_values_2 = deque([], maxlen=30)
 
     def tag_callback(self, msg):
         tag_world = np.array(msg.data)
         self.raw_values.append(tag_world)
 
-        if len(self.raw_values) == 30:
+        if len(self.raw_values) == 10:
             average = np.mean(self.raw_values, axis=0)
             self.raw_values_2.append(average)
             self.raw_values.clear()
