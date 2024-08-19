@@ -24,6 +24,8 @@ import pymap3d as p3d
 from datetime import datetime
 import serial
 
+from std_msgs.msg import Bool
+
 # import message for YOLOv5
 from my_bboxes_msg.msg import VehiclePhase
 from my_bboxes_msg.msg import YoloObstacle
@@ -480,7 +482,9 @@ class VehicleController(Node):
                             self.subphase = 'pause'
 
         elif self.phase == 9:
-            self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
+            ALmsg = Bool()
+            ALmsg.data = True
+            self.autolanding_publisher.publish(ALmsg)
             self.print("Reached the goal")
             self.print("Landing requested\n")
             self.phase = -2

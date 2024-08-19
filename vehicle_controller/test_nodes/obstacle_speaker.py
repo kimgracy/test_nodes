@@ -20,7 +20,8 @@ class ObstacleSpeaker(Node):
         self.declare_parameter('y', 220.0)
 
         self.publisher_ = self.create_publisher(YoloObstacle, '/yolo_obstacle', qos_profile)
-        self.timer = self.create_timer(1, self.timer_callback)
+
+        self.timer = self.create_timer(0.3, self.timer_callback)
     
     def timer_callback(self):
         msg = YoloObstacle()
