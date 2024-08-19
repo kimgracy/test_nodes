@@ -1,0 +1,46 @@
+2024-08-19 19:33:23,595 - 
+<< yolo_test_07_bezier >>
+
+
+2024-08-19 19:33:23,596 - Takeoff requested
+
+2024-08-19 19:33:31,595 - Takeoff completed
+2024-08-19 19:33:31,596 - Offboard control mode requested
+
+2024-08-19 19:33:31,645 - Change to offboard mode completed
+2024-08-19 19:33:31,645 - WP1 requested
+
+2024-08-19 19:33:31,649 - 
+[phase go to 7]
+
+2024-08-19 19:33:34,596 - WP1 reached
+2024-08-19 19:33:34,597 - align to vertiport
+
+2024-08-19 19:34:07,246 - WP2 requested
+
+2024-08-19 19:34:07,249 - 
+[phase go to 8]
+
+2024-08-19 19:34:35,446 - Detected obstacle: ladder-truck. 1 times
+2024-08-19 19:34:36,446 - Detected obstacle: ladder-truck. 2 times
+2024-08-19 19:34:37,447 - Detected obstacle: ladder-truck. 3 times
+2024-08-19 19:34:38,445 - Detected obstacle: ladder-truck. 4 times
+2024-08-19 19:34:39,445 - Detected obstacle: ladder-truck. 5 times
+2024-08-19 19:34:40,445 - Detected obstacle: ladder-truck. 6 times
+2024-08-19 19:34:41,446 - Detected obstacle: ladder-truck. 7 times
+2024-08-19 19:34:42,445 - Detected obstacle: ladder-truck. 8 times
+2024-08-19 19:34:42,448 - 
+[subphase to pause]
+
+2024-08-19 19:34:46,049 - 
+[subphase to align]
+
+2024-08-19 19:35:04,146 - Alignment completed. Detecting obstacle requested
+
+2024-08-19 19:35:04,146 - 
+[subphase to detecting_obstacle]
+
+2024-08-19 19:35:04,195 - First detection of ladder-truck.
+2024-08-19 19:35:04,445 - Detected obstacle: ladder-truck
+2024-08-19 19:35:05,445 - Detected obstacle: ladder-truck
+2024-08-19 19:35:06,445 - Detected obstacle: ladder-truck
