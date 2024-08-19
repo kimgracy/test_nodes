@@ -21,6 +21,7 @@ import os
 import logging
 import numpy as np
 import pymap3d as p3d
+from datetime import datetime
 
 # import message for YOLOv5
 from my_bboxes_msg.msg import VehiclePhase
@@ -45,8 +46,7 @@ class VehicleController(Node):
         1. Constants
         """
         self.takeoff_height = 5.0                          # Parameter: MIS_TAKEOFF_ALT
-        self.mc_start_speed = 0.1
-        self.mc_end_speed = 0.1
+
         self.mc_acceptance_radius = 0.3
         self.acceptance_heading_angle = 0.01                # 0.01 rad = 0.57 deg
 
@@ -54,7 +54,21 @@ class VehicleController(Node):
         self.mc_start_speed = 0.001
         self.mc_end_speed = 0.001
 
-        self.fast_yaw_speed = 0.1                           # 0.1 rad = 5.73 deg
+        self.fast_yaw_speed = 0.2                           # 0.1 rad = 5.73 deg
+
+
+        self.declare_parameter('logging', True)
+        self.logging = self.get_parameter('logging').value
+        if self.logging:
+            log_dir = os.path.join(os.getcwd(), 'src/vehicle_controller/test_nodes/log')
+            os.makedirs(log_dir, exist_ok=True)
+            current_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+            log_file = os.path.join(log_dir,  f'log_{current_time}.txt')
+            logging.basicConfig(filename=log_file,
+                                level=logging.INFO,
+                                format='%(asctime)s - %(message)s')
+            self.logger = logging.getLogger(__name__)
+
 
         """
         2. Load waypoints (GPS)
@@ -93,6 +107,7 @@ class VehicleController(Node):
         # vehicle position
         self.pos = np.array([0.0, 0.0, 0.0])
         self.pos_gps = np.array([0.0, 0.0, 0.0])
+        self.vel = np.array([0.0, 0.0, 0.0])
         self.yaw = 0.0
         
         # waypoints
@@ -165,7 +180,13 @@ class VehicleController(Node):
     """
     Services
     """   
+    def print(self, *args, **kwargs):
+        print(*args, **kwargs)
+        if self.logging:
+            self.logger.info(*args, **kwargs)
+    
     def convert_global_to_local_waypoint(self, home_position_gps):
+        self.bezier_counter = 0
         self.home_position = self.pos # set home position
         for i in range(1, 3):
             # WP_gps = [lat, lon, rel_alt]
@@ -175,9 +196,11 @@ class VehicleController(Node):
             self.WP.append(wp_position)
         self.WP.append(np.array([0.0, 0.0, -self.takeoff_height]))
 
-    def bezier_curve(self, xi, xf, vi, vf, vmax):
+    def bezier_curve(self, xi, xf, vmax):
+        # reset counter
+        self.bezier_counter = 0
         # total time calculation
-        total_time = np.linalg.norm(xf - xi) / vmax * 2      # Assume that average velocity = vmax / 2
+        total_time = np.linalg.norm(xf - xi) / vmax * 2      # Assume that average velocity = vmax / 2.     real velocity is lower then vmax
         if total_time <= self.bezier_minimum_time:
             total_time = self.bezier_minimum_time
 
@@ -187,6 +210,7 @@ class VehicleController(Node):
             vi = self.mc_start_speed * direction
         else:
             vi = self.vel
+            self.bezier_counter = int(1/self.time_period) - 1
         print(f'vi: {vi}, vf: {vf}')
 
         point1 = xi
@@ -226,13 +250,17 @@ class VehicleController(Node):
         msg.subphase = str(self.subphase)
         self.vehicle_phase_publisher.publish(msg)
 
+    def camera_callback(self):
+        pass
+
     def main_timer_callback(self):
         if self.phase == -1:
             if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
                 self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_TAKEOFF)
                 self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_TAKEOFF:
-                print("Takeoff requested\n")
+                self.print('\n<< yolo_test_07_bezier >>\n\n')
+                self.print("Takeoff requested\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
                 self.previous_goal = self.current_goal
                 self.current_goal = self.WP[0]
@@ -240,8 +268,8 @@ class VehicleController(Node):
 
         elif self.phase == 0:
             if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LOITER:
-                print("Takeoff completed")
-                print("Offboard control mode requested\n")
+                self.print("Takeoff completed")
+                self.print("Offboard control mode requested\n")
                 self.publish_vehicle_command(
                     VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
                     param1=1.0, # main mode
@@ -249,30 +277,30 @@ class VehicleController(Node):
                 )
             elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
                 # vehicle command send repeatedly until the vehicle is in offboard mode")
-                print("Change to offboard mode completed")
-                print("WP1 requested\n")
+                self.print("Change to offboard mode completed")
+                self.print("WP1 requested\n")
                 self.previous_goal = self.current_goal
                 self.current_goal = self.WP[1]
-                self.bezier_counter = 0
-                self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.mc_start_speed, self.mc_end_speed)
+                self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.vmax)
+                self.print('\n[phase go to 7]\n')
                 self.phase = 7
 
         elif self.phase == 7:
             if self.bezier_counter == self.num_bezier - int(1 / self.time_period) - 1:
                 self.publish_trajectory_setpoint(position_sp=self.current_goal)
             else:
-                self.publish_trajectory_setpoint(position_sp=self.bezier_points[self.bezier_counter+int(1/self.time_period)])
+                self.publish_trajectory_setpoint(position_sp=self.bezier_points[self.bezier_counter])
                 self.bezier_counter += 1
                 
             if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
-                print("WP1 reached")
-                print("WP2 requested\n")
+                self.print("WP1 reached")
+                self.print("WP2 requested\n")
                 self.previous_goal = self.current_goal
                 self.current_goal = self.WP[2]
-                self.bezier_counter = 0
-                self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.mc_start_speed, self.mc_end_speed, 2)
+                self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, 2)
                 self.phase = 8
-                self.subphase == 'go_slow'
+                self.print('\n[phase go to 8]\n')
+                self.subphase = 'go_slow'
 
 
         elif self.phase == 8:
@@ -287,22 +315,23 @@ class VehicleController(Node):
                 # detect obstacle. 'pause'
                 if self.obstacle_label != '':
                     self.ladder_detected += 1
-                    print(f'Detected obstacle: {self.obstacle_label}. {self.ladder_detected} times')
+                    self.print(f'Detected obstacle: {self.obstacle_label}. {self.ladder_detected} times')
                     self.obstacle_label = ''
                     if self.ladder_detected >= 10:
                         self.ladder_detected = 0
                         self.previous_goal = self.pos
                         self.current_goal = self.pos + np.array([(1.0)*np.cos(self.yaw+(np.pi/2)), (1.0)*np.sin(self.yaw+(np.pi/2)), 0.0])
-                        self.bezier_counter = 0
-                        self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.mc_start_speed, self.mc_end_speed, 2)
+                        self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, 2)
+                        self.print('\n[subphase to pause]\n')
                         self.subphase = 'pause'
 
                 # if reach the wp8 without confronting obstacle
                 if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
-                    print("WP2 reached")
-                    print("Home position requested\n")
+                    self.print("WP2 reached")
+                    self.print("Home position requested\n")
                     self.previous_goal = self.current_goal
                     # landing
+                    self.print('\n[phase go to 9]\n')
                     self.phase = 9
             
             elif self.subphase == 'pause':
@@ -322,12 +351,13 @@ class VehicleController(Node):
                     direction = self.WP[2] - self.WP[1]
                     t = np.dot(self.pos - self.WP[1], direction) / np.dot(direction, direction)
                     self.current_goal = self.WP[1] + t * direction
-                    self.bezier_counter = 0
-                    self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.mc_start_speed, self.mc_end_speed, 2)
+                    self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, 2)
+                    self.print('\n[subphase to align]\n')
                     self.subphase = 'align'
             
             elif self.subphase == 'align':
                 # align along the path from 7 to 8  =>  'detecting_obstacle'
+                print('|', end='')
                 if self.bezier_counter == self.num_bezier - int(1 / self.time_period) - 1:
                     self.publish_trajectory_setpoint(position_sp=self.current_goal, yaw_sp = self.yaw + np.sign(np.sin(self.mission_yaw - self.yaw)) * self.fast_yaw_speed)
                 else:
@@ -337,7 +367,8 @@ class VehicleController(Node):
                     self.bezier_counter += 1
                 
                 if (np.abs(self.yaw - self.mission_yaw) < self.acceptance_heading_angle) and np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
-                    print("Alignment completed. Detecting obstacle requested\n")
+                    self.print("Alignment completed. Detecting obstacle requested\n")
+                    self.print('\n[subphase to detecting_obstacle]\n')
                     self.subphase = 'detecting_obstacle'
                     self.ladder_detect_attempts = 0
                     self.ladder_detected = 0
@@ -345,20 +376,20 @@ class VehicleController(Node):
             
             elif self.subphase == 'detecting_obstacle':
                 # detecting obstacle for 5 seconds  =>  create the avoidance path  =>  'avoiding_obstacle'
-                self.publish_trajectory_setpoint(position_sp=self.current_goal, yaw_sp = self.yaw + np.sign(np.sin(self.mission_yaw - self.yaw)) * self.fast_yaw_speed)
+                self.publish_trajectory_setpoint(position_sp=self.current_goal, yaw_sp=self.mission_yaw)
 
                 # Check for the first detection of ladder-truck
-                if not self.first_ladder_detected and self.obstacle_label == 'ladder-truck':
+                if not self.first_ladder_detected and self.obstacle_label != '':
                     self.first_ladder_detected = True
                     self.obstacle_label = ''
-                    print('First detection of ladder-truck.')
+                    self.print('First detection of ladder-truck.')
 
                 # Start counting attempts only after the first detection
                 if self.first_ladder_detected:
                     if self.obstacle_label != '':
+                        self.print(f'Detected obstacle: {self.obstacle_label}')
                         self.obstacle_label = ''
                         self.ladder_detected += 1
-                        print(f'Detected obstacle: {self.obstacle_label}')
                         # chack the orientation of the obstacle
                         if self.obstacle_orientation == 'left':
                             self.left_or_right -= 1
@@ -366,7 +397,7 @@ class VehicleController(Node):
                             self.left_or_right += 1
                         # create the avoidance path
                         if self.ladder_detected >= 50:
-                            print(f'Ladder-truck Orientation: {self.left_or_right}')
+                            self.print(f'Ladder-truck Orientation: {self.left_or_right}')
                             if self.left_or_right < 0: # obstacle is on the left side
                                 self.WP_yolo[0] = self.pos
                                 self.WP_yolo[1] = self.pos + np.array([(2.0)*np.cos(self.yaw+(np.pi/2)), (2.0)*np.sin(self.yaw+(np.pi/2)), 0.0])
@@ -381,26 +412,26 @@ class VehicleController(Node):
                             self.left_or_right = 0
                             self.previous_goal = self.current_goal
                             self.current_goal = self.WP_yolo[1]
-                            self.bezier_counter = 0
-                            self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.mc_start_speed, self.mc_end_speed, 2)
+                            self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.vmax)
+                            self.print('\n[subphase to avoiding_obstacle]\n')
                             self.subphase = 'avoiding_obstacle'
 
             elif self.subphase == 'avoiding_obstacle':
                 # go along with ractangle path. but if you find obstacle being in front of you  =>  'pause'.
                 if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
                     if self.yolo_wp_chacker == 3:
-                        print("WP2 reached")
-                        print("Home position requested\n")
+                        self.print("WP2 reached")
+                        self.print("Home position requested\n")
                         self.previous_goal = self.current_goal
                         # landing
+                        self.print('\n[phase to 9]\n')
                         self.phase = 9
                     else:
-                        print("yolo wp reached")
+                        self.print(f"yolo wp{self.yolo_wp_chacker} reached")
                         self.yolo_wp_chacker += 1
                         self.previous_goal = self.current_goal
                         self.current_goal = self.WP_yolo[self.yolo_wp_chacker]
-                        self.bezier_counter = 0
-                        self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.mc_start_speed, self.mc_end_speed, self.vmax)
+                        self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.vmax)
                 else:
                     if self.bezier_counter == self.num_bezier - int(1 / self.time_period) - 1:
                         self.publish_trajectory_setpoint(position_sp=self.current_goal)
@@ -408,25 +439,27 @@ class VehicleController(Node):
                         self.publish_trajectory_setpoint(position_sp=self.bezier_points[self.bezier_counter])
                         self.bezier_counter += 1
                     
-                    if (self.obstacle_label != '') and (self.obstacle_x<340 and self.obstacle_x>300):
+                    if (self.obstacle_label != '') and (self.obstacle_x<330 and self.obstacle_x>310):
                         self.ladder_detected += 1
-                        print(f'Detected obstacle again: {self.obstacle_label}. {self.ladder_detected} times')
+                        self.print(f'Detected obstacle again: {self.obstacle_label}. {self.ladder_detected} times')
                         self.obstacle_label = ''
                         if self.ladder_detected >= 10:
                             self.ladder_detected = 0
                             self.previous_goal = self.pos
                             self.current_goal = self.pos + np.array([(1.0)*np.cos(self.yaw+(np.pi/2)), (1.0)*np.sin(self.yaw+(np.pi/2)), 0.0])
-                            self.bezier_counter = 0
-                            self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.mc_start_speed, self.mc_end_speed, 2)
+                            self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, 2)
+                            self.print('\n[subphase to pause]\n')
                             self.subphase = 'pause'
 
         elif self.phase == 9:
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
+            self.print("Reached the goal")
+            self.print("Landing requested\n")
             self.phase = -2
         
         else:
-            print("Mission completed")
-            print("Congratulations!\n")
+            self.print("Mission completed")
+            self.print("Congratulations!\n")
             self.destroy_node()
             rclpy.shutdown()
 
@@ -440,6 +473,7 @@ class VehicleController(Node):
     def vehicle_local_position_callback(self, msg):
         self.vehicle_local_position = msg
         self.pos = np.array([msg.x, msg.y, msg.z])
+        self.vel = np.array([msg.vx, msg.vy, msg.vz])
         self.yaw = msg.heading
         if self.phase != -1:
             # set position relative to the home position after takeoff
