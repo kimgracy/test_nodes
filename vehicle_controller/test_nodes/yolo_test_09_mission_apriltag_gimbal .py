@@ -24,6 +24,8 @@ import pymap3d as p3d
 from datetime import datetime
 import serial
 
+from std_msgs.msg import Bool, Float64
+
 # import message for YOLOv5
 from my_bboxes_msg.msg import VehiclePhase
 from my_bboxes_msg.msg import YoloObstacle
@@ -79,6 +81,7 @@ class VehicleController(Node):
         self.WP = [np.array([0.0, 0.0, -self.takeoff_height])]
         self.WP_gps = [np.array([0.0, 0.0, 0.0])]
         self.home_position = np.array([0.0, 0.0, 0.0])
+        self.initial_yaw = 0.0
 
         self.declare_parameters(
             namespace='',
@@ -145,7 +148,7 @@ class VehicleController(Node):
 
         # Gimbal
         self.time_checker = 0
-        # self.ser = serial.Serial('/dev/ttyGimbal', 115200)        ######################################################################################
+        #self.ser = serial.Serial('/dev/ttyGimbal', 115200)     ######################################################################################
         self.gimbal_pitch = 0.0
         self.gimbal_counter = 0
         self.pitch_index = 0
@@ -182,6 +185,12 @@ class VehicleController(Node):
         self.vehicle_phase_publisher = self.create_publisher(  # YOLOv5
             VehiclePhase, '/vehicle_phase', qos_profile
         )
+        self.autolanding_publisher = self.create_publisher(
+            Bool, 'auto_land_on', 10
+        )
+        self.initial_yaw_publisher = self.create_publisher(
+            Float64, 'initial_yaw', 10
+        )
 
         """
         6. timer setup
@@ -207,6 +216,7 @@ class VehicleController(Node):
     def convert_global_to_local_waypoint(self, home_position_gps):
         self.bezier_counter = 0
         self.home_position = self.pos # set home position
+        self.initial_yaw = self.yaw   # set initial yaw
         for i in range(1, 9):
             # WP_gps = [lat, lon, rel_alt]
             wp_position = p3d.geodetic2ned(self.WP_gps[i][0], self.WP_gps[i][1], self.WP_gps[i][2] + home_position_gps[2],
@@ -283,40 +293,68 @@ class VehicleController(Node):
         data_var = to_twos_complement(10 * int(self.gimbal_pitch))
         data_crc = crc_xmodem(data_fix + data_var)
         packet = bytearray(data_fix + data_var + data_crc)
-        # self.ser.write(packet)          ######################################################################################
+        # self.ser.write(packet)        ######################################################################################
 
-    def main_timer_callback(self):
+    def main_timer_callback(self):            
         if self.phase == -1:
-            if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-                self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_TAKEOFF)
-                self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
-            elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_TAKEOFF:
+            if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
+                and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
                 self.print('\n<< yolo_test_07_bezier >>\n\n')
-                self.print("Takeoff requested\n")
+                self.print("Mission mode requested\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
-                self.previous_goal = self.current_goal
-                self.current_goal = self.WP[0]
-                self.phase = 0
+                self.phase = 0 
 
         elif self.phase == 0:
-            if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LOITER:
-                self.print("Takeoff completed")
-                self.print("Offboard control mode requested\n")
-                self.publish_vehicle_command(
-                    VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
-                    param1=1.0, # main mode
-                    param2=6.0  # offboard
-                )
-            elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-                # vehicle command send repeatedly until the vehicle is in offboard mode")
-                self.print("Change to offboard mode completed")
-                self.print("WP1 requested\n")
-                self.previous_goal = self.current_goal
-                self.current_goal = self.WP[7]
-                self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, self.vmax)
-                self.print('\n[phase go to 7]\n')
-                self.phase = 7
-                self.subphase = 'go'
+            if np.linalg.norm(self.pos - self.WP[7]) < self.mc_acceptance_radius * 10:
+                if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
+                    self.print("WP7 reached")
+                    self.print("Offboard control mode requested\n")
+                    self.publish_vehicle_command(
+                        VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
+                        param1=1.0, # main mode
+                        param2=6.0  # offboard mode
+                    )
+                elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                    self.print("Offboard control mode activated")
+                    self.print("[Phase 6 start]\n")
+                    self.phase = 6
+                    self.previous_goal = self.pos
+                    self.current_goal = self.pos + np.array([self.calculate_braking_distance()*np.cos(self.yaw), self.calculate_braking_distance()*np.sin(self.yaw), 0.0])
+                    self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, np.linalg.norm(self.vel))
+                    self.print('\n[subphase to pause]\n')
+                    self.subphase = 'pause'
+        
+        elif self.phase == 6:
+            if self.subphase == 'pause':
+                if self.bezier_counter < self.num_bezier:
+                    self.publish_trajectory_setpoint(position_sp=self.bezier_points[self.bezier_counter])
+                    self.bezier_counter += 1
+                
+                if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
+                    # calculate the angle and distance to align with the vector of wp7 to wp8
+                    self.mission_yaw = self.get_bearing_to_next_waypoint(self.WP[7], self.WP[8])
+                    self.previous_goal = self.current_goal
+                    self.current_goal = self.WP[7]
+                    self.bezier_points = self.bezier_curve(self.previous_goal, self.current_goal, 2)
+                    self.print('\n[subphase to align]\n')
+                    self.subphase = 'align'
+            
+            elif self.subphase == 'align':
+                if self.bezier_counter < self.num_bezier:
+                    self.publish_trajectory_setpoint(
+                        position_sp = self.bezier_points[self.bezier_counter],
+                        yaw_sp = self.yaw + np.sign(np.sin(self.mission_yaw - self.yaw)) * self.fast_yaw_speed)   # slow smooth yaw alignment
+                    self.bezier_counter += 1
+                else:
+                    self.publish_trajectory_setpoint(
+                        position_sp = self.current_goal,
+                        yaw_sp = self.yaw + np.sign(np.sin(self.mission_yaw - self.yaw)) * self.fast_yaw_speed)   # slow smooth yaw alignment
+                
+                if np.abs((self.yaw - self.mission_yaw + np.pi) % (2 * np.pi) - np.pi) < self.acceptance_heading_angle and np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
+                    self.print("Alignment completed.\n")
+                    self.print('\n[Phase to 7]\n')
+                    self.phase = 7
+                    self.subphase = 'go'
 
         elif self.phase == 7:
             if self.subphase == 'go':
@@ -480,7 +518,14 @@ class VehicleController(Node):
                             self.subphase = 'pause'
 
         elif self.phase == 9:
-            self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
+            ALmsg = Bool()
+            ALmsg.data = True
+            self.autolanding_publisher.publish(ALmsg)
+
+            yawmsg = Float64()
+            yawmsg.data = self.initial_yaw
+            self.initial_yaw_publisher.publish(yawmsg)
+
             self.print("Reached the goal")
             self.print("Landing requested\n")
             self.phase = -2

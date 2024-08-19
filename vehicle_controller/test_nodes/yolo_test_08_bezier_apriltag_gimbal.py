@@ -24,6 +24,8 @@ import pymap3d as p3d
 from datetime import datetime
 import serial
 
+from std_msgs.msg import Bool, Float64
+
 # import message for YOLOv5
 from my_bboxes_msg.msg import VehiclePhase
 from my_bboxes_msg.msg import YoloObstacle
@@ -79,6 +81,7 @@ class VehicleController(Node):
         self.WP = [np.array([0.0, 0.0, -self.takeoff_height])]
         self.WP_gps = [np.array([0.0, 0.0, 0.0])]
         self.home_position = np.array([0.0, 0.0, 0.0])
+        self.initial_yaw = 0.0
 
         self.declare_parameters(
             namespace='',
@@ -182,6 +185,12 @@ class VehicleController(Node):
         self.vehicle_phase_publisher = self.create_publisher(  # YOLOv5
             VehiclePhase, '/vehicle_phase', qos_profile
         )
+        self.autolanding_publisher = self.create_publisher(
+            Bool, 'auto_land_on', 10
+        )
+        self.initial_yaw_publisher = self.create_publisher(
+            Float64, 'initial_yaw', 10
+        )
 
         """
         6. timer setup
@@ -207,6 +216,7 @@ class VehicleController(Node):
     def convert_global_to_local_waypoint(self, home_position_gps):
         self.bezier_counter = 0
         self.home_position = self.pos # set home position
+        self.initial_yaw = self.yaw   # set initial yaw
         for i in range(1, 9):
             # WP_gps = [lat, lon, rel_alt]
             wp_position = p3d.geodetic2ned(self.WP_gps[i][0], self.WP_gps[i][1], self.WP_gps[i][2] + home_position_gps[2],
@@ -283,7 +293,7 @@ class VehicleController(Node):
         data_var = to_twos_complement(10 * int(self.gimbal_pitch))
         data_crc = crc_xmodem(data_fix + data_var)
         packet = bytearray(data_fix + data_var + data_crc)
-        # self.ser.write(packet)          ######################################################################################
+        # self.ser.write(packet)      ######################################################################################
 
     def main_timer_callback(self):
         if self.phase == -1:
@@ -480,7 +490,14 @@ class VehicleController(Node):
                             self.subphase = 'pause'
 
         elif self.phase == 9:
-            self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
+            ALmsg = Bool()
+            ALmsg.data = True
+            self.autolanding_publisher.publish(ALmsg)
+
+            yawmsg = Float64()
+            yawmsg.data = self.initial_yaw
+            self.initial_yaw_publisher.publish(yawmsg)
+
             self.print("Reached the goal")
             self.print("Landing requested\n")
             self.phase = -2
@@ -564,7 +581,7 @@ class VehicleController(Node):
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
 
-
+    
 """
 Functions for Gimbal Control
 """
