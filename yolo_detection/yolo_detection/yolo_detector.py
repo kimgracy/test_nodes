@@ -29,7 +29,7 @@ class YoloDetector(Node):
 
 
         # define model path and load the model
-        model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small.engine')
+        model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small.pt')
         self.model = torch.hub.load(os.path.expanduser('~/yolov5'), 'custom', path=model_path, source='local')
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
@@ -45,6 +45,7 @@ class YoloDetector(Node):
         self.subphase = '0'
         # variables
         self.y_thrashold = 280
+        self.monitor_size = (1280, 960)
         
         
         
@@ -114,7 +115,8 @@ class YoloDetector(Node):
 
 
         # display frame to monitor
-        cv2.imshow('YOLOv5 Detection', frame)
+        resized_frame = cv2.resize(frame, self.monitor_size)
+        cv2.imshow('YOLOv5 Detection', resized_frame)
         
 
         '''
