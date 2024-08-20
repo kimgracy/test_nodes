@@ -39,21 +39,25 @@ class YoloDetector(Node):
         #self.publisher_target = self.create_publisher(YoloTarget, '/yolo_target', qos_profile)
         # create subscribe
         self.subscriber_phase = self.create_subscription(VehiclePhase, '/vehicle_phase', self.phase_callback, qos_profile)
+
         # create phase
         self.phase = '0'
         self.subphase = '0'
+        # variables
+        self.y_thrashold = 280
         
-        # create cv_bridge instance
-        self.bridge = CvBridge()
+        
         
         # create target_capture folder, which is used to save target images
         self.target_capture_folder = os.path.join(os.getcwd(), 'src/yolo_detection/config/target_capture')
         os.makedirs(self.target_capture_folder, exist_ok=True)
-        
         # timer for publishing target image
-        self.timer_period = 10.0  # seconds
+        self.timer_period = 1.0  # seconds
         self.last_capture_time = time.time()
-        
+
+        # create cv_bridge instance
+        self.bridge = CvBridge()
+
         # create a subscriber for the v4l2 image topic
         self.subscription = self.create_subscription(
             Image,
@@ -66,8 +70,6 @@ class YoloDetector(Node):
     def image_callback(self, msg):
         # convert ROS Image message to OpenCV image
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        
-        #cv2.imshow('YOLOv5 Detection', frame)
         
         # send frame to YOLOv5 model
         results = self.model(frame)
@@ -86,14 +88,15 @@ class YoloDetector(Node):
                 y_center = (y1 + y2) / 2
                 
                 # publish obstacle message and draw bounding box
-                # if ((abs(y1-y2) >= 450) and (label == 'ladder-truck' or label == 'class4')):
+                # if ((abs(y1-y2) >= self.y_thrashold) and (label == 'ladder-truck' or label == 'class4')):
                 if ((label == 'ladder-truck' or label == 'class4')):
                     # draw bounding box and label
+                    label = 'ladder-truck'
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                     cv2.putText(frame, f'{label} {row[4]:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
                     
                     # publish obstacle message when phase is 8
-                    if self.phase == '8':
+                    if (self.phase == '8') or (self.subphase==''):
                         obstacle_msg = YoloObstacle()
                         obstacle_msg.label = label
                         obstacle_msg.x = x_center
