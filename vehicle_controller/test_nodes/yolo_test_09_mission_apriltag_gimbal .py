@@ -300,7 +300,7 @@ class VehicleController(Node):
         if self.phase == -1:
             if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
                 and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                self.print('\n<< yolo_test_07_bezier >>\n\n')
+                self.print('\n<< yolo_test_09_bezier >>\n\n')
                 self.print("Mission mode requested\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
                 self.phase = 0 

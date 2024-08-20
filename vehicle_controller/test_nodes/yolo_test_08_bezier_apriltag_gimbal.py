@@ -302,7 +302,7 @@ class VehicleController(Node):
                 self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_TAKEOFF)
                 self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_TAKEOFF:
-                self.print('\n<< yolo_test_07_bezier >>\n\n')
+                self.print('\n<< yolo_test_08_bezier >>\n\n')
                 self.print("Takeoff requested\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
                 self.previous_goal = self.current_goal
