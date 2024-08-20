@@ -1,0 +1,37 @@
+2024-08-19 16:45:02,704 - 
+<< yolo_test_07_bezier >>
+
+
+2024-08-19 16:45:02,704 - Takeoff requested
+
+2024-08-19 16:45:09,754 - Takeoff completed
+2024-08-19 16:45:09,754 - Offboard control mode requested
+
+2024-08-19 16:45:09,804 - Change to offboard mode completed
+2024-08-19 16:45:09,805 - WP1 requested
+
+2024-08-19 16:45:09,807 - 
+[phase go to 7]
+
+2024-08-19 16:45:18,205 - WP1 reached
+2024-08-19 16:45:18,205 - WP2 requested
+
+2024-08-19 16:45:18,208 - 
+[phase go to 8]
+
+2024-08-19 16:45:18,255 - Detected obstacle: ladder. 1 times
+2024-08-19 16:45:18,754 - Detected obstacle: ladder-truck. 2 times
+2024-08-19 16:45:19,156 - Detected obstacle: ladder. 3 times
+2024-08-19 16:45:19,755 - Detected obstacle: ladder-truck. 4 times
+2024-08-19 16:45:19,904 - Detected obstacle: ladder. 5 times
+2024-08-19 16:45:20,755 - Detected obstacle: ladder-truck. 6 times
+2024-08-19 16:45:20,855 - Detected obstacle: ladder. 7 times
+2024-08-19 16:45:21,755 - Detected obstacle: ladder-truck. 8 times
+2024-08-19 16:45:21,955 - Detected obstacle: ladder. 9 times
+2024-08-19 16:45:22,754 - Detected obstacle: ladder-truck. 10 times
+2024-08-19 16:45:22,755 - 
+[subphase to pause]
+
+2024-08-19 16:45:26,207 - 
+[subphase to align]
+

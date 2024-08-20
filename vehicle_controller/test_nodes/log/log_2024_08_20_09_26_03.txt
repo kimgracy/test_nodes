@@ -1,0 +1,20 @@
+2024-08-20 09:26:09,464 - 
+<< yolo_test_07_bezier >>
+
+
+2024-08-20 09:26:09,464 - Takeoff requested
+
+2024-08-20 09:26:21,164 - Takeoff completed
+2024-08-20 09:26:21,164 - Offboard control mode requested
+
+2024-08-20 09:26:21,214 - Change to offboard mode completed
+2024-08-20 09:26:21,215 - WP1 requested
+
+2024-08-20 09:26:21,215 - bezier curve generated.
+2024-08-20 09:26:21,215 - 
+[phase go to 7]
+
+2024-08-20 09:26:28,065 - WP1 reached
+2024-08-20 09:26:28,065 - mission_yaw: -2.558648268541461
+2024-08-20 09:26:28,066 - align to vertiport
+

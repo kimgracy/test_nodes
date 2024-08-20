@@ -1,0 +1,97 @@
+2024-08-20 09:48:17,935 - 
+<< yolo_test_07_bezier >>
+
+
+2024-08-20 09:48:17,936 - Takeoff requested
+
+2024-08-20 09:48:29,686 - Takeoff completed
+2024-08-20 09:48:29,687 - Offboard control mode requested
+
+2024-08-20 09:48:29,735 - Change to offboard mode completed
+2024-08-20 09:48:29,736 - WP1 requested
+
+2024-08-20 09:48:29,736 - bezier curve generated.
+2024-08-20 09:48:29,736 - 
+[phase go to 7]
+
+2024-08-20 09:48:36,736 - WP1 reached
+2024-08-20 09:48:36,737 - mission_yaw: -2.55864826777029
+2024-08-20 09:48:36,737 - align to vertiport
+
+2024-08-20 09:49:03,486 - WP2 requested
+
+2024-08-20 09:49:03,487 - bezier curve generated.
+2024-08-20 09:49:03,487 - 
+[phase go to 8]
+
+2024-08-20 09:49:20,436 - Detected obstacle: ladder-truck. 1 times
+2024-08-20 09:49:20,737 - Detected obstacle: ladder-truck. 2 times
+2024-08-20 09:49:21,035 - Detected obstacle: ladder-truck. 3 times
+2024-08-20 09:49:21,337 - Detected obstacle: ladder-truck. 4 times
+2024-08-20 09:49:21,636 - Detected obstacle: ladder-truck. 5 times
+2024-08-20 09:49:21,936 - Detected obstacle: ladder-truck. 6 times
+2024-08-20 09:49:22,236 - Detected obstacle: ladder-truck. 7 times
+2024-08-20 09:49:22,536 - Detected obstacle: ladder-truck. 8 times
+2024-08-20 09:49:22,536 - bezier curve generated.
+2024-08-20 09:49:22,536 - 
+[subphase to pause]
+
+2024-08-20 09:49:22,786 - bezier curve generated.
+2024-08-20 09:49:22,786 - 
+[subphase to align]
+
+2024-08-20 09:49:25,386 - Alignment completed. Detecting obstacle requested
+
+2024-08-20 09:49:25,386 - 
+[subphase to detecting_obstacle]
+
+2024-08-20 09:49:25,436 - Detected obstacle: ladder-truck
+2024-08-20 09:49:25,536 - Detected obstacle: ladder-truck
+2024-08-20 09:49:25,835 - Detected obstacle: ladder-truck
+2024-08-20 09:49:26,136 - Detected obstacle: ladder-truck
+2024-08-20 09:49:26,436 - Detected obstacle: ladder-truck
+2024-08-20 09:49:26,736 - Detected obstacle: ladder-truck
+2024-08-20 09:49:27,036 - Detected obstacle: ladder-truck
+2024-08-20 09:49:27,336 - Detected obstacle: ladder-truck
+2024-08-20 09:49:27,636 - Detected obstacle: ladder-truck
+2024-08-20 09:49:27,936 - Detected obstacle: ladder-truck
+2024-08-20 09:49:28,236 - Detected obstacle: ladder-truck
+2024-08-20 09:49:28,535 - Detected obstacle: ladder-truck
+2024-08-20 09:49:28,836 - Detected obstacle: ladder-truck
+2024-08-20 09:49:29,136 - Detected obstacle: ladder-truck
+2024-08-20 09:49:29,437 - Detected obstacle: ladder-truck
+2024-08-20 09:49:29,736 - Detected obstacle: ladder-truck
+2024-08-20 09:49:30,036 - Detected obstacle: ladder-truck
+2024-08-20 09:49:30,336 - Detected obstacle: ladder-truck
+2024-08-20 09:49:30,636 - Detected obstacle: ladder-truck
+2024-08-20 09:49:30,936 - Detected obstacle: ladder-truck
+2024-08-20 09:49:31,236 - Detected obstacle: ladder-truck
+2024-08-20 09:49:31,536 - Detected obstacle: ladder-truck
+2024-08-20 09:49:31,836 - Detected obstacle: ladder-truck
+2024-08-20 09:49:32,136 - Detected obstacle: ladder-truck
+2024-08-20 09:49:32,437 - Detected obstacle: ladder-truck
+2024-08-20 09:49:32,437 - Ladder-truck Orientation: -25
+2024-08-20 09:49:32,438 - bezier curve generated.
+2024-08-20 09:49:32,438 - 
+[subphase to avoiding_obstacle]
+
+2024-08-20 09:49:41,786 - yolo wp0 reached
+2024-08-20 09:49:41,787 - bezier curve generated.
+2024-08-20 09:49:41,836 - yolo wp1 reached
+2024-08-20 09:49:41,837 - bezier curve generated.
+2024-08-20 09:49:59,936 - yolo wp2 reached
+2024-08-20 09:49:59,936 - bezier curve generated.
+2024-08-20 09:50:02,736 - WP2 reached
+2024-08-20 09:50:02,736 - Home position requested
+
+2024-08-20 09:50:02,736 - 
+[phase to 9]
+
+2024-08-20 09:50:34,636 - Alignment completed. Auto landing requested
+
+2024-08-20 09:50:34,686 - Reached the goal
+2024-08-20 09:50:34,686 - Landing requested
+
+2024-08-20 09:50:34,735 - Mission completed
+2024-08-20 09:50:34,735 - Congratulations!
+

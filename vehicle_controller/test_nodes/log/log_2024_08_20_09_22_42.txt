@@ -1,0 +1,34 @@
+2024-08-20 09:22:49,949 - 
+<< yolo_test_07_bezier >>
+
+
+2024-08-20 09:22:49,950 - Takeoff requested
+
+2024-08-20 09:23:00,900 - Takeoff completed
+2024-08-20 09:23:00,900 - Offboard control mode requested
+
+2024-08-20 09:23:00,950 - Change to offboard mode completed
+2024-08-20 09:23:00,950 - WP1 requested
+
+2024-08-20 09:23:00,951 - bezier curve generated.
+2024-08-20 09:23:00,951 - 
+[phase go to 7]
+
+2024-08-20 09:23:07,849 - WP1 reached
+2024-08-20 09:23:07,850 - mission_yaw: -2.5586482636692955
+2024-08-20 09:23:07,850 - align to vertiport
+
+2024-08-20 09:23:34,850 - WP2 requested
+
+2024-08-20 09:23:34,851 - bezier curve generated.
+2024-08-20 09:23:34,851 - 
+[phase go to 8]
+
+2024-08-20 09:23:53,099 - Detected obstacle: ladder-truck. 1 times
+2024-08-20 09:23:53,400 - Detected obstacle: ladder-truck. 2 times
+2024-08-20 09:23:53,700 - Detected obstacle: ladder-truck. 3 times
+2024-08-20 09:23:54,000 - Detected obstacle: ladder-truck. 4 times
+2024-08-20 09:23:54,301 - Detected obstacle: ladder-truck. 5 times
+2024-08-20 09:23:54,600 - Detected obstacle: ladder-truck. 6 times
+2024-08-20 09:23:54,900 - Detected obstacle: ladder-truck. 7 times
+2024-08-20 09:23:55,200 - Detected obstacle: ladder-truck. 8 times

@@ -1,0 +1,67 @@
+2024-08-19 17:23:04,323 - 
+<< yolo_test_07_bezier >>
+
+
+2024-08-19 17:23:04,324 - Takeoff requested
+
+2024-08-19 17:23:10,618 - Takeoff completed
+2024-08-19 17:23:10,619 - Offboard control mode requested
+
+2024-08-19 17:23:10,668 - Change to offboard mode completed
+2024-08-19 17:23:10,669 - WP1 requested
+
+2024-08-19 17:23:10,670 - 
+[phase go to 7]
+
+2024-08-19 17:23:16,219 - WP1 reached
+2024-08-19 17:23:16,219 - WP2 requested
+
+2024-08-19 17:23:16,222 - 
+[phase go to 8]
+
+2024-08-19 17:23:16,268 - Detected obstacle: ladder-truck. 1 times
+2024-08-19 17:23:17,219 - Detected obstacle: ladder-truck. 2 times
+2024-08-19 17:23:18,218 - Detected obstacle: ladder-truck. 3 times
+2024-08-19 17:23:19,219 - Detected obstacle: ladder-truck. 4 times
+2024-08-19 17:23:20,219 - Detected obstacle: ladder-truck. 5 times
+2024-08-19 17:23:21,219 - Detected obstacle: ladder-truck. 6 times
+2024-08-19 17:23:22,219 - Detected obstacle: ladder-truck. 7 times
+2024-08-19 17:23:23,219 - Detected obstacle: ladder-truck. 8 times
+2024-08-19 17:23:23,221 - 
+[subphase to pause]
+
+2024-08-19 17:23:26,419 - 
+[subphase to align]
+
+2024-08-19 17:23:35,069 - Alignment completed. Detecting obstacle requested
+
+2024-08-19 17:23:35,069 - 
+[subphase to detecting_obstacle]
+
+2024-08-19 17:23:35,119 - First detection of ladder-truck.
+2024-08-19 17:23:35,218 - Detected obstacle: ladder-truck
+2024-08-19 17:23:36,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:37,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:38,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:39,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:40,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:41,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:42,218 - Detected obstacle: ladder-truck
+2024-08-19 17:23:43,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:44,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:45,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:46,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:47,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:48,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:49,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:50,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:51,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:52,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:53,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:54,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:55,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:56,219 - Detected obstacle: ladder-truck
+2024-08-19 17:23:57,218 - Detected obstacle: ladder-truck
+2024-08-19 17:23:58,218 - Detected obstacle: ladder-truck
+2024-08-19 17:23:59,218 - Detected obstacle: ladder-truck
+2024-08-19 17:23:59,218 - Ladder-truck Orientation: -25
