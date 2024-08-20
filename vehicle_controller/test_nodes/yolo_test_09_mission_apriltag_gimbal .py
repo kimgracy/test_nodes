@@ -87,6 +87,7 @@ class VehicleController(Node):
             namespace='',
             parameters=[
                 ('vmax', None),
+                ('angle', None)
                 ('gps_WP1', None),
                 ('gps_WP2', None),
                 ('gps_WP3', None),
@@ -257,8 +258,8 @@ class VehicleController(Node):
         self.print('bezier curve generated.')
         return bezier
 
-    def calculate_braking_distance(self, v):
-        return (np.linalg.norm(self.val))**2 / (2 * self.max_acceleration)
+    def calculate_braking_distance(self):
+        return (np.linalg.norm(self.vel))**2 / (2 * self.max_acceleration)
     
     def get_bearing_to_next_waypoint(self, now, next):
         now2d = now[0:2]
@@ -286,7 +287,7 @@ class VehicleController(Node):
     def gimbal_control_callback(self):
         """gimbal control"""
         # SITL
-        self.publish_gimbal_control(pitch=self.gimbal_pitch * np.pi / 180, yaw=0.0)
+        # self.publish_gimbal_control(pitch=self.gimbal_pitch * np.pi / 180, yaw=0.0)
 
         # real gimbal (serial)
         data_fix = bytes([0x55, 0x66, 0x01, 0x04, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00])
@@ -299,7 +300,7 @@ class VehicleController(Node):
         if self.phase == -1:
             if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
                 and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                self.print('\n<< yolo_test_07_bezier >>\n\n')
+                self.print('\n<< yolo_test_09_bezier >>\n\n')
                 self.print("Mission mode requested\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
                 self.phase = 0 
@@ -357,6 +358,7 @@ class VehicleController(Node):
                     self.subphase = 'go'
 
         elif self.phase == 7:
+            self.gimbal_pitch = -30.0
             if self.subphase == 'go':
                 if self.bezier_counter < self.num_bezier:
                     self.publish_trajectory_setpoint(position_sp=self.bezier_points[self.bezier_counter])
@@ -406,9 +408,12 @@ class VehicleController(Node):
                     self.print("WP2 reached")
                     self.print("Home position requested\n")
                     self.previous_goal = self.current_goal
+                    self.current_goal = self.WP[8]
                     # landing
                     self.print('\n[phase go to 9]\n')
                     self.phase = 9
+                    self.subphase = 'align'
+                    self.mission_yaw = 0.0
             
             elif self.subphase == 'pause':
                 # pause. calculate the angle and distance to align with the vector of wp7 to wp8  =>  'align'
@@ -491,9 +496,12 @@ class VehicleController(Node):
                         self.print("WP2 reached")
                         self.print("Home position requested\n")
                         self.previous_goal = self.current_goal
+                        self.current_goal = self.WP[8]
                         # landing
                         self.print('\n[phase to 9]\n')
                         self.phase = 9
+                        self.subphase = 'align'
+                        self.mission_yaw = 0.0
                     else:
                         self.print(f"yolo wp{self.yolo_wp_checker} reached")
                         self.yolo_wp_checker += 1
@@ -518,17 +526,21 @@ class VehicleController(Node):
                             self.subphase = 'pause'
 
         elif self.phase == 9:
-            ALmsg = Bool()
-            ALmsg.data = True
-            self.autolanding_publisher.publish(ALmsg)
+            if self.subphase == 'align':
+                self.gimbal_pitch = -90.0
+                self.publish_trajectory_setpoint(position_sp=self.current_goal, yaw_sp = self.yaw + np.sign(np.sin(self.mission_yaw - self.yaw)) * self.fast_yaw_speed)
+                if np.abs((self.yaw - self.mission_yaw + np.pi) % (2 * np.pi) - np.pi) < self.acceptance_heading_angle:
+                    self.subphase = 'auto_landing'
+                    self.print("Alignment completed. Auto landing requested\n")
 
-            yawmsg = Float64()
-            yawmsg.data = self.initial_yaw
-            self.initial_yaw_publisher.publish(yawmsg)
+            elif self.subphase == 'auto_landing':
+                ALmsg = Bool()
+                ALmsg.data = True
+                self.autolanding_publisher.publish(ALmsg)
 
-            self.print("Reached the goal")
-            self.print("Landing requested\n")
-            self.phase = -2
+                self.print("Reached the goal")
+                self.print("Landing requested\n")
+                self.phase = -2
         
         else:
             self.print("Mission completed")
