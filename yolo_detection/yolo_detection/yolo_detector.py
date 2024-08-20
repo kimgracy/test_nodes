@@ -96,7 +96,7 @@ class YoloDetector(Node):
                     cv2.putText(frame, f'{label} {row[4]:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
                     
                     # publish obstacle message when phase is 8
-                    if (self.phase == '8') or (self.subphase==''):
+                    if (self.phase == '8'):
                         obstacle_msg = YoloObstacle()
                         obstacle_msg.label = label
                         obstacle_msg.x = x_center
