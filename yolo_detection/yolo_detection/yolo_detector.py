@@ -80,7 +80,7 @@ class YoloDetector(Node):
         
 
         # draw bounding box in frame & publish obstacle message
-        for i in range(len(labels)):
+        for i in range(0,1):
             row = cords[i]
             if row[4] >= 0.3:
                 x1, y1, x2, y2 = int(row[0] * frame.shape[1]), int(row[1] * frame.shape[0]), int(row[2] * frame.shape[1]), int(row[3] * frame.shape[0])
