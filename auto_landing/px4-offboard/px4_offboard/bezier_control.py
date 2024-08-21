@@ -46,7 +46,7 @@ from px4_msgs.msg import OffboardControlMode
 from px4_msgs.msg import TrajectorySetpoint
 from px4_msgs.msg import VehicleStatus, VehicleLocalPosition
 from px4_msgs.msg import VehicleCommand
-from std_msgs.msg import Float32MultiArray, Bool
+from std_msgs.msg import Float32MultiArray, Bool, Float32
 
 hz = 50 #system hz, must be synchronized to the main callback frequency
 
@@ -156,8 +156,8 @@ class BezierControl(Node):
         )
 
         self.phase_sub = self.create_subscription(
-            Bool,
-            'auto_land_on',
+            Float32,
+            'auto_land_on_yaw',
             self.phase_check_callback,
             10
         )
@@ -194,6 +194,11 @@ class BezierControl(Node):
         self.detect = 0
         self.loop_on = 1
         self.pub = 0
+        self.yaw_start = 0
+        self.vehicle_length = np.array([0.5, 0.0, 0.0])
+        self.R = np.array([[np.cos(self.yaw_start), -np.sin(self.yaw_start), 0],
+                   [np.sin(self.yaw_start), np.cos(self.yaw_start), 0],
+                   [0, 0, 1]])
 
         #Way point
         self.vehicle_position = np.zeros(3)
@@ -207,10 +212,15 @@ class BezierControl(Node):
         self.nav_state = msg.nav_state
         
     def phase_check_callback(self,msg):
-        self.phase_check = msg.data
+        self.phase_check = True
+        self.yaw_start = msg.data
+        self.R = np.array([[np.cos(self.yaw_start), -np.sin(self.yaw_start), 0],
+                   [np.sin(self.yaw_start), np.cos(self.yaw_start), 0],
+                   [0, 0, 1]])
+        self.get_logger().info(f"self.yaw: {self.yaw_start}")
 
     def point_command_callback(self, msg):
-        self.xf = np.asfarray(msg.data[0:3])
+        self.xf = np.asfarray(msg.data[0:3]) + np.dot(self.R, self.vehicle_length)
         self.vf = np.asfarray(msg.data[3:6])
         self.init_position = copy.deepcopy(self.vehicle_position)
         self.detect = 1
@@ -233,7 +243,7 @@ class BezierControl(Node):
 
     def goal_position_bezier(self):
         #Edge case: if apriltag is not detected for delta_t = 300
-        self.xf_goal = np.asfarray(self.goal_position)
+        self.xf_goal = np.asarray(self.goal_position) + np.dot(self.R, self.vehicle_length)
         self.vf_goal = np.asfarray([0.0, 0.0, 0.5])
         self.init_position_goal = copy.deepcopy(self.vehicle_position)
         bezier_points_goal = points(self.init_position_goal, self.xf_goal, self.vehicle_velocity, self.vf_goal, hz)
@@ -243,7 +253,6 @@ class BezierControl(Node):
         self.count_goal = bezier_points_goal.count
         self.t_goal = bezier_points_goal.t
 
-        self.get_logger().info(f"bezier_points: {self.vehicle_position},{bezier_points_goal.point2}")
 
 
     def vehicle_position_callback(self, msg):
@@ -301,10 +310,11 @@ class BezierControl(Node):
     def cmdloop_callback(self):
         if self.phase_check and self.loop_on:
             self.publish_offboard_control_mode(position=True)
+            self.get_logger().info("1")
             if self.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
                 trajectory_msg = TrajectorySetpoint()
                 trajectory_msg.timestamp = int(Clock().now().nanoseconds / 1000)
-                
+                self.get_logger().info("2")
                 if self.delta_t == -1 or self.delta_t > 300:
                     trajectory_msg.position[0] = self.x_goal[self.delta_t_goal + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[1] = self.y_goal[self.delta_t_goal + int(1/self.timer_period)]#np.nan
@@ -312,8 +322,10 @@ class BezierControl(Node):
                     trajectory_msg.velocity[0] = np.nan #self.vx[self.delta_t] 
                     trajectory_msg.velocity[1] = np.nan #self.vy[self.delta_t]
                     trajectory_msg.velocity[2] = np.nan #self.vz[self.delta_t]
+                    trajectory_msg.yaw = self.yaw_start
                     self.delta_t_goal += 1
                     self.publisher_trajectory.publish(trajectory_msg)
+                    self.get_logger().info(f"goal_position: {self.xf_goal}")
 
                 elif self.delta_t + int(1/self.timer_period) < self.count-1 and np.linalg.norm(self.vehicle_position[2]-self.xf[2]) > 0.5 and self.detect:   # if receiving command from the bezier curve
                     trajectory_msg.position[0] = self.x[self.delta_t + int(1/self.timer_period)]#np.nan
@@ -322,10 +334,11 @@ class BezierControl(Node):
                     trajectory_msg.velocity[0] = np.nan #self.vx[self.delta_t] 
                     trajectory_msg.velocity[1] = np.nan #self.vy[self.delta_t]
                     trajectory_msg.velocity[2] = np.nan #self.vz[self.delta_t]
-                    trajectory_msg.yaw = 0.0
+                    trajectory_msg.yaw = self.yaw_start
                     self.delta_t += 1
                     self.delta_t_goal = 0
                     self.publisher_trajectory.publish(trajectory_msg)
+                    self.get_logger().info(f"bezier_position: {self.xf}")
                 
                 elif np.linalg.norm(self.vehicle_position[2]-self.xf[2]) < 0.5:
                     self.land()
