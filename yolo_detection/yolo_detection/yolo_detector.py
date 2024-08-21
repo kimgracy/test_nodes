@@ -15,6 +15,14 @@ import time
 import numpy as np
 
 
+def is_jetson():
+    try:
+        with open('/etc/nv_tegra_release', 'r') as f:
+            return True
+    except FileNotFoundError:
+        return False
+
+
 class YoloDetector(Node):
 
     def __init__(self):
@@ -29,7 +37,11 @@ class YoloDetector(Node):
 
 
         # define model path and load the model
-        model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small.pt')
+        if is_jetson():
+            model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small.engine')
+        else:
+            print('Not run on Nvidia Jetson. use best_small.pt')
+            model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small.pt')            
         self.model = torch.hub.load(os.path.expanduser('~/yolov5'), 'custom', path=model_path, source='local')
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
@@ -44,8 +56,8 @@ class YoloDetector(Node):
         self.phase = '0'
         self.subphase = '0'
         # variables
-        self.y_thrashold = 280
-        self.monitor_size = (1280, 960)
+        self.y_threshold = 280
+        self.monitor_size = tuple(np.array([640,480]) * 2)
         
         
         
@@ -77,19 +89,19 @@ class YoloDetector(Node):
 
         # extract bounding box, labels
         labels, cords = results.xyxyn[0][:, -1], results.xyxyn[0][:, :-1]
-        
 
         # draw bounding box in frame & publish obstacle message
-        for i in range(0,1):
-            row = cords[i]
+        # just use a bounding box with highest confidence
+        if len(cords) > 0:
+            row = cords[0]
             if row[4] >= 0.3:
                 x1, y1, x2, y2 = int(row[0] * frame.shape[1]), int(row[1] * frame.shape[0]), int(row[2] * frame.shape[1]), int(row[3] * frame.shape[0])
-                label = self.model.names[int(labels[i])]
+                label = self.model.names[int(labels[0])]
                 x_center = (x1 + x2) / 2
                 y_center = (y1 + y2) / 2
                 
                 # publish obstacle message and draw bounding box
-                # if ((abs(y1-y2) >= self.y_thrashold) and (label == 'ladder-truck' or label == 'class4')):
+                # if ((abs(y1-y2) >= self.y_threshold) and (label == 'ladder-truck' or label == 'class4')):
                 if ((label == 'ladder-truck' or label == 'class4')):
                     # draw bounding box and label
                     label = 'ladder-truck'
@@ -138,7 +150,7 @@ class YoloDetector(Node):
             cv2.destroyAllWindows()
         '''  
             
-        # break whan keyinturrupt occurs
+        # break whan keyinturrupt occurs    !!! DON'T REMOVE IT !!!
         if cv2.waitKey(1) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             

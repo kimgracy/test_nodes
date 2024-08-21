@@ -51,6 +51,7 @@ class VehicleController(Node):
         self.takeoff_height = 5.0                          # Parameter: MIS_TAKEOFF_ALT
 
         self.mc_acceptance_radius = 0.3
+        self.offboard_acceptance_radius = 2.0
         self.acceptance_heading_angle = 0.15                # 0.15 rad = 8.59 deg
 
         self.bezier_threshold_speed = 0.7
@@ -310,7 +311,7 @@ class VehicleController(Node):
         elif self.phase == 7:
             if self.subphase == 'not start offboard yet':
                 if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                    if np.linalg.norm(self.pos - self.WP[7]) < self.mc_acceptance_radius * 10:
+                    if np.linalg.norm(self.pos - self.WP[7]) < self.offboard_acceptance_radius:
                         self.print("WP7 reached")
                         self.print("Offboard control mode requested\n")
                         self.publish_vehicle_command(
