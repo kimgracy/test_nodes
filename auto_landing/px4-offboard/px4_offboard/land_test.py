@@ -15,7 +15,7 @@ from px4_msgs.msg import VehicleCommand
 from px4_msgs.msg import OffboardControlMode
 from px4_msgs.msg import TrajectorySetpoint
 from px4_msgs.msg import GimbalManagerSetManualControl
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32
 
 # import math, numpy
 import math
@@ -101,7 +101,7 @@ class VehicleController(Node):
             TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile
         )
         self.autolanding_publisher = self.create_publisher(
-            Bool, 'auto_land_on', 10
+            Float32, 'auto_land_on_yaw', 10
         )
         self.gimbal_publisher = self.create_publisher(
             GimbalManagerSetManualControl, '/fmu/in/gimbal_manager_set_manual_control', qos_profile
@@ -140,6 +140,7 @@ class VehicleController(Node):
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_TAKEOFF)
             self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
             self.home_position = self.pos # set home position
+            self.yaw_start = self.yaw
             self.phase = 0
             self.landing_phase = False
     
@@ -157,18 +158,18 @@ class VehicleController(Node):
                 self.phase = 0.5
         elif self.phase == 0.5:
             self.gimbal_pitchangle = -math.pi/2
-            self.current_goal = [0.0, 3.0, -10.0]
+            self.current_goal = [0.0, -3.0, -5.0]
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
+            if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
+                self.phase = 1
             self.phase = 1
         elif self.phase == 1:
-            ALmsg = Bool()
-            ALmsg.data = True
-            self.autolanding_publisher.publish(ALmsg)
+            self.auto_land_yaw = Float32()
+            self.auto_land_yaw.data = self.yaw_start
+            self.autolanding_publisher.publish(self.auto_land_yaw)
         print(self.phase)
     
             
-
-
     def gimbal_timer_callback(self):
         gim_msg = GimbalManagerSetManualControl()
         gim_msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
