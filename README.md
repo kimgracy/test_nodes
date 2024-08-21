@@ -278,6 +278,7 @@ ros2 run test_nodes mc_test_06 --ros-args --params-file ~/test_ws/src/vehicle_co
 ros2 run test_nodes yolo_test_01
 ros2 run test_nodes yolo_test_02
 ros2 run test_nodes yolo_test_03
+ros2 run test_nodes final_01 --ros-args --params-file ~/test_ws/src/vehicle_controller/config/final_01_gps_waypoint.yaml
 ```
 
 - mc_test_00: arming
