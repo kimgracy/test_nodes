@@ -53,6 +53,7 @@ class VehicleController(Node):
 
         self.mc_acceptance_radius = 0.3
         self.fw_acceptance_radius = 30
+        self.offboard_acceptance_radius = 2.0
         self.acceptance_heading_angle = 0.15                # 0.15 rad = 8.59 deg
 
         self.bezier_threshold_speed = 0.7
@@ -386,7 +387,7 @@ class VehicleController(Node):
         elif self.phase == 7:
             if self.subphase == 'heading to WP[7]':
                 if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                    if np.linalg.norm(self.pos - self.WP[7]) < self.mc_acceptance_radius * 10:
+                    if np.linalg.norm(self.pos - self.WP[7]) < self.offboard_acceptance_radius:
                         self.print("WP7 reached")
                         self.print("Offboard control mode requested\n")
                         self.publish_vehicle_command(
@@ -461,7 +462,7 @@ class VehicleController(Node):
                     self.ladder_detected += 1
                     self.print(f'Detected obstacle: {self.obstacle_label}. {self.ladder_detected} times')
                     self.obstacle_label = ''
-                    if self.ladder_detected >= 8:
+                    if self.ladder_detected >= 15:       # 0.75 seconds when theoritically calculate the time. /yolo_obstacle = 20Hz
                         self.ladder_detected = 0
                         self.previous_goal = self.pos
                         self.current_goal = self.pos + np.array([self.calculate_braking_distance()*np.cos(self.yaw), self.calculate_braking_distance()*np.sin(self.yaw), 0.0])
