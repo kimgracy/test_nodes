@@ -51,6 +51,7 @@ class VehicleController(Node):
         self.takeoff_height = 5.0                          # Parameter: MIS_TAKEOFF_ALT
 
         self.mc_acceptance_radius = 0.3
+        self.offboard_acceptance_radius = 2.0
         self.acceptance_heading_angle = 0.15                # 0.15 rad = 8.59 deg
 
         self.bezier_threshold_speed = 0.7
@@ -309,8 +310,8 @@ class VehicleController(Node):
 
         elif self.phase == 7:
             if self.subphase == 'not start offboard yet':
-                if np.linalg.norm(self.pos - self.WP[7]) < self.mc_acceptance_radius * 10:
-                    if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
+                if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
+                    if np.linalg.norm(self.pos - self.WP[7]) < self.offboard_acceptance_radius:
                         self.print("WP7 reached")
                         self.print("Offboard control mode requested\n")
                         self.publish_vehicle_command(
@@ -386,7 +387,7 @@ class VehicleController(Node):
                     self.ladder_detected += 1
                     self.print(f'Detected obstacle: {self.obstacle_label}. {self.ladder_detected} times')
                     self.obstacle_label = ''
-                    if self.ladder_detected >= 8:
+                    if self.ladder_detected >= 15:       # 0.75 seconds when theoritically calculate the time. /yolo_obstacle = 20Hz
                         self.ladder_detected = 0
                         self.previous_goal = self.pos
                         self.current_goal = self.pos + np.array([self.calculate_braking_distance()*np.cos(self.yaw), self.calculate_braking_distance()*np.sin(self.yaw), 0.0])
@@ -459,7 +460,7 @@ class VehicleController(Node):
                     else: # right
                         self.left_or_right += 1
                     # create the avoidance path
-                    if self.ladder_detected >= 25:
+                    if self.ladder_detected >= 80:      # 4 seconds when theoritically calculate the time. /yolo_obstacle = 20Hz
                         self.print(f'Ladder-truck Orientation: {self.left_or_right}')
                         self.mission_yaw = self.get_bearing_to_next_waypoint(self.WP[7], self.WP[8])
                         if self.left_or_right < 0: # obstacle is on the left side
@@ -508,7 +509,7 @@ class VehicleController(Node):
                         self.ladder_detected += 1
                         self.print(f'Detected obstacle again: {self.obstacle_label}. {self.ladder_detected} times')
                         self.obstacle_label = ''
-                        if self.ladder_detected >= 8:
+                        if self.ladder_detected >= 15:      # 0.75 seconds when theoritically calculate the time. /yolo_obstacle = 20Hz 
                             self.ladder_detected = 0
                             self.previous_goal = self.pos
                             self.current_goal = self.pos + np.array([(1.0)*np.cos(self.yaw+(np.pi/2)), (1.0)*np.sin(self.yaw+(np.pi/2)), 0.0])
