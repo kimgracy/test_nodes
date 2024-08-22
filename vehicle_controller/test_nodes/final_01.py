@@ -11,6 +11,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPo
 from px4_msgs.msg import VehicleStatus
 from px4_msgs.msg import VehicleLocalPosition
 from px4_msgs.msg import VehicleGlobalPosition
+from px4_msgs.msg import SensorGps
 """msgs for publishing"""
 from px4_msgs.msg import VehicleCommand
 from px4_msgs.msg import OffboardControlMode
@@ -51,6 +52,7 @@ class VehicleController(Node):
         self.takeoff_height = 5.0                          # Parameter: MIS_TAKEOFF_ALT
 
         self.mc_acceptance_radius = 0.3
+        self.fw_acceptance_radius = 30
         self.offboard_acceptance_radius = 2.0
         self.acceptance_heading_angle = 0.15                # 0.15 rad = 8.59 deg
 
@@ -61,6 +63,8 @@ class VehicleController(Node):
         self.fast_yaw_speed = 0.05                          # 0.05 rad/s = 2.87 deg/s
 
         self.corridor_radius = 2.2
+
+        self.gps_time = 0.0
 
 
         self.declare_parameter('logging', True)
@@ -123,11 +127,25 @@ class VehicleController(Node):
         self.pos_gps = np.array([0.0, 0.0, 0.0])
         self.vel = np.array([0.0, 0.0, 0.0])
         self.yaw = 0.0
+
+        # vehicle auto
+        self.auto = int(self.vehicle_status != VehicleStatus.NAVIGATION_STATE_POSCTL and self.vehicle_status != VehicleStatus.NAVIGATION_STATE_STAB)
         
         # waypoints
         self.previous_goal = None
         self.current_goal = None
         self.mission_yaw = float('nan')
+
+        # initialize log info & error
+        self.log_dict = {
+            'self.auto': [],
+            'self.subphase': [],
+            'self.gps_time': [],
+            'self.pos_gps[0]': [],
+            'self.pos_gps[1]': [],
+            'self.pos_gps[2]': []
+        }
+        self.error = [np.inf]
 
         # Bezier curve
         self.num_bezier = 0
@@ -171,6 +189,9 @@ class VehicleController(Node):
         self.yolo_obstacle_subscriber = self.create_subscription(  # YOLOv5
             YoloObstacle, '/yolo_obstacle', self.yolo_obstacle_callback, qos_profile
         )
+        self.gps_subscriber = self.create_subscription(
+            SensorGps, '/fmu/out/vehicle_gps_position', self.vehicle_gps_callback, qos_profile
+        )
 
         """
         5. Create Publishers
@@ -202,10 +223,13 @@ class VehicleController(Node):
         self.main_timer = self.create_timer(self.time_period, self.main_timer_callback)
         self.vehicle_phase_publisher_timer = self.create_timer(self.time_period, self.vehicle_phase_publisher_callback)  # YOLOv5
         self.gimbal_control_callback_timer = self.create_timer(self.time_period, self.gimbal_control_callback)
+ 
+        self.log_time_period = 0.05     # 20 Hz
+        self.log_timer = self.create_timer(self.log_time_period, self.log_timer_callback)
+
         
         print("Successfully executed: vehicle_controller")
-        print("Please switch to offboard mode.\n")
-        
+
     
     """
     Services
@@ -283,7 +307,7 @@ class VehicleController(Node):
         msg.phase = str(self.phase)
         msg.subphase = str(self.subphase)
         self.vehicle_phase_publisher.publish(msg)
-    
+
     # Gimbal
     def gimbal_control_callback(self):
         """gimbal control"""
@@ -296,20 +320,72 @@ class VehicleController(Node):
         packet = bytearray(data_fix + data_var + data_crc)
         #self.ser.write(packet)        ######################################################################################
 
-    def main_timer_callback(self):            
+    # Logging
+    def log_timer_callback(self):
+        if self.phase in [-1, 7, 8, 9] :
+            self.print(f"{self.auto}\t{self.phase}\t{self.subphase}\t{self.gps_time:.4e}\t{self.pos_gps[0]:.6e}\t{self.pos_gps[1]:.6e}\t{self.pos_gps[2]:.6e}\n")
+
+
+    def main_timer_callback(self):       
         if self.phase == -1:
             if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
                 and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                self.print('\n<< yolo_test_09_bezier >>\n\n')
+                self.print('\n<< final_01 >>\n\n')
                 self.print("Mission mode requested\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
-                self.phase = 7
-                self.subphase = 'not start offboard yet'
-                self.print('\n[[[Phase to 7]]\n')
-                self.print('\n[subphase to not start offboard yet]\n')
+                self.print(self.WP)
+                self.subphase = 'takeoff'
+                self.phase = 1
+
+
+        elif self.phase in range(1,7):
+            if np.linalg.norm(self.pos - self.WP[self.phase]) >= self.fw_acceptance_radius : # far from WP
+                if len(self.log_dict['self.gps_time']) == 0 :
+                    self.print(f"{self.auto}\t{self.phase}\t{self.subphase}\t{self.gps_time:.4e}\t{self.pos_gps[0]:.6e}\t{self.pos_gps[1]:.6e}\t{self.pos_gps[2]:.6e}\n")
+                elif len(self.log_dict['self.gps_time']) != 0 :
+                    self.print(f"{self.error}\n")
+                    min_idx = self.error.index(min(self.error))
+
+                    for i in range(len(self.log_dict['self.gps_time'])) :
+                        if i < min_idx :
+                            phase = self.phase
+                            self.subphase = f'heading to WP[{phase}]'
+                            self.print(f"{self.log_dict['self.auto'][i]}\t{phase}\t{self.log_dict['self.subphase'][i]}\t{self.log_dict['self.gps_time'][i]:.4e}\t{self.log_dict['self.pos_gps[0]'][i]:.6e}\t{self.log_dict['self.pos_gps[1]'][i]:.6e}\t{self.log_dict['self.pos_gps[2]'][i]:.6e}\n")
+                        else :
+                            phase = self.phase + 1
+                            self.subphase = f'heading to WP[{phase}]'
+                            self.print(f"{self.log_dict['self.auto'][i]}\t{phase}\t{self.log_dict['self.subphase'][i]}\t{self.log_dict['self.gps_time'][i]:.4e}\t{self.log_dict['self.pos_gps[0]'][i]:.6e}\t{self.log_dict['self.pos_gps[1]'][i]:.6e}\t{self.log_dict['self.pos_gps[2]'][i]:.6e}\n")
+
+                    self.phase += 1
+
+                # initialize log info & error
+                self.log_dict = {
+                    'self.auto': [],
+                    'self.subphase': [],
+                    'self.gps_time': [],
+                    'self.pos_gps[0]': [],
+                    'self.pos_gps[1]': [],
+                    'self.pos_gps[2]': []
+                }
+                self.error = [np.inf]
+
+
+            elif np.linalg.norm(self.pos - self.WP[self.phase]) < self.fw_acceptance_radius : # near WP
+                # log stops printing, log info still being collected in array 
+                self.subphase = f'collecting log info'
+
+                self.log_dict['self.auto'].append(self.auto)
+                self.log_dict['self.subphase'].append(self.subphase)
+                self.log_dict['self.gps_time'].append(self.gps_time)
+                self.log_dict['self.pos_gps[0]'].append(self.pos_gps[0])
+                self.log_dict['self.pos_gps[1]'].append(self.pos_gps[1])
+                self.log_dict['self.pos_gps[2]'].append(self.pos_gps[2]) # collecting log info
+
+                self.error.append(np.linalg.norm(self.pos-self.WP[self.phase])) # collect error info
+                
 
         elif self.phase == 7:
-            if self.subphase == 'not start offboard yet':
+            if self.subphase == 'heading to WP[7]':
                 if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
                     if np.linalg.norm(self.pos - self.WP[7]) < self.offboard_acceptance_radius:
                         self.print("WP7 reached")
@@ -373,7 +449,6 @@ class VehicleController(Node):
                         self.subphase = 'go_slow'
                         self.print('\n[[phase to 8]]\n')
                         self.print('\n[subphase to go slow]\n')
-
 
         elif self.phase == 8:
             if self.subphase == 'go_slow':
@@ -460,7 +535,7 @@ class VehicleController(Node):
                     else: # right
                         self.left_or_right += 1
                     # create the avoidance path
-                    if self.ladder_detected >= 80:      # 4 seconds when theoritically calculate the time. /yolo_obstacle = 20Hz
+                    if self.ladder_detected >= 80:
                         self.print(f'Ladder-truck Orientation: {self.left_or_right}')
                         self.mission_yaw = self.get_bearing_to_next_waypoint(self.WP[7], self.WP[8])
                         if self.left_or_right < 0: # obstacle is on the left side
@@ -509,7 +584,7 @@ class VehicleController(Node):
                         self.ladder_detected += 1
                         self.print(f'Detected obstacle again: {self.obstacle_label}. {self.ladder_detected} times')
                         self.obstacle_label = ''
-                        if self.ladder_detected >= 15:      # 0.75 seconds when theoritically calculate the time. /yolo_obstacle = 20Hz 
+                        if self.ladder_detected >= 15:
                             self.ladder_detected = 0
                             self.previous_goal = self.pos
                             self.current_goal = self.pos + np.array([(1.0)*np.cos(self.yaw+(np.pi/2)), (1.0)*np.sin(self.yaw+(np.pi/2)), 0.0])
@@ -559,6 +634,9 @@ class VehicleController(Node):
     def vehicle_global_position_callback(self, msg):
         self.vehicle_global_position = msg
         self.pos_gps = np.array([msg.lat, msg.lon, msg.alt])
+
+    def vehicle_gps_callback(self, msg) :
+        self.gps_time = msg.time_utc_usec
     
     # YOLOv5. size of picture is 640*480. x 320 기준으로 판단 
     def yolo_obstacle_callback(self, msg):
