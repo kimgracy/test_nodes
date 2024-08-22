@@ -1,0 +1,13 @@
+vehicle_controller: # Name of node
+  ros__parameters: # ROS parameters
+    fast_vmax: 5.0
+    slow_vmax: 3.0
+    angle: 10.0
+    # WP: [latitude, longitude, relative altitude]
+    gps_WP1: [37.24635330, 126.66708170, 50.0]
+    gps_WP2: [37.24907306, 126.66954504, 50.0]
+    gps_WP3: [37.24850126, 126.66541181, 50.0]
+    gps_WP4: [37.24769484, 126.66688669, 10.0]
+    gps_WP5: [37.24661438, 126.66877588, 10.0]
+    gps_WP6: [37.24643153, 126.67049857, 30.0]
+    gps_WP7: [37.24643033, 126.66845966, 30.0]

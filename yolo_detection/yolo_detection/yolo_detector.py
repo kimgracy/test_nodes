@@ -90,6 +90,10 @@ class YoloDetector(Node):
         # extract bounding box, labels
         labels, cords = results.xyxyn[0][:, -1], results.xyxyn[0][:, :-1]
 
+        # add phase information to the frame in black color
+        cv2.putText(frame, f'Phase: {self.phase}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+        cv2.putText(frame, f'Subphase: {self.subphase}', (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+
         # draw bounding box in frame & publish obstacle message
         # just use a bounding box with highest confidence
         if len(cords) > 0:
