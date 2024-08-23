@@ -215,6 +215,7 @@ class BezierControl(Node):
     def phase_check_callback(self,msg):
         self.phase_check = True
         self.home_position = msg.data[0:3]
+        self.goal_position = self.home_position
         self.yaw_start = msg.data[3]
         self.R = np.array([[np.cos(self.yaw_start), -np.sin(self.yaw_start), 0],
                             [np.sin(self.yaw_start), np.cos(self.yaw_start), 0],
@@ -321,7 +322,6 @@ class BezierControl(Node):
                     trajectory_msg.position[0] = self.x_goal[self.delta_t_goal + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[1] = self.y_goal[self.delta_t_goal + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[2] = self.z_goal[self.delta_t_goal + int(1/self.timer_period)]#np.nan
-                    trajectory_msg.position += np.array(self.home_position)         # position setpoint is relative to the home position
                     trajectory_msg.velocity[0] = np.nan #self.vx[self.delta_t] 
                     trajectory_msg.velocity[1] = np.nan #self.vy[self.delta_t]
                     trajectory_msg.velocity[2] = np.nan #self.vz[self.delta_t]
@@ -334,7 +334,6 @@ class BezierControl(Node):
                     trajectory_msg.position[0] = self.x[self.delta_t + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[1] = self.y[self.delta_t + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[2] = self.z[self.delta_t + int(1/self.timer_period)]#np.nan
-                    trajectory_msg.position += np.array(self.home_position)         # position setpoint is relative to the home position
                     trajectory_msg.velocity[0] = np.nan #self.vx[self.delta_t] 
                     trajectory_msg.velocity[1] = np.nan #self.vy[self.delta_t]
                     trajectory_msg.velocity[2] = np.nan #self.vz[self.delta_t]
