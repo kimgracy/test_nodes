@@ -140,6 +140,9 @@ class VehicleController(Node):
             'self.auto': [],
             'self.subphase': [],
             'self.gps_time': [],
+            'self.pos[0]': [],
+            'self.pos[1]': [],
+            'self.pos[2]': [],
             'self.pos_gps[0]': [],
             'self.pos_gps[1]': [],
             'self.pos_gps[2]': []
