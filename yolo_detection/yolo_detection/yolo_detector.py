@@ -1,18 +1,19 @@
-import os
 import rclpy
-import sys
-
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
+
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from my_bboxes_msg.msg import YoloObstacle, YoloTarget, VehiclePhase
 
+import os
+import sys
+import time
+
 import cv2
 import torch
-from cv_bridge import CvBridge
-import time
 import numpy as np
+from cv_bridge import CvBridge
 
 
 def is_jetson():
@@ -35,7 +36,6 @@ class YoloDetector(Node):
             depth=1
         )
 
-
         # define model path and load the model
         if is_jetson():
             model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small.engine')
@@ -45,25 +45,24 @@ class YoloDetector(Node):
         self.model = torch.hub.load(os.path.expanduser('~/yolov5'), 'custom', path=model_path, source='local')
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
-        
         # create publishers
         self.publisher_obstacle = self.create_publisher(YoloObstacle, '/yolo_obstacle', qos_profile)
-        #self.publisher_target = self.create_publisher(YoloTarget, '/yolo_target', qos_profile)
+
         # create subscribe
         self.subscriber_phase = self.create_subscription(VehiclePhase, '/vehicle_phase', self.phase_callback, qos_profile)
 
         # create phase
         self.phase = '0'
         self.subphase = '0'
+
         # variables
         self.y_threshold = 280
         self.monitor_size = tuple(np.array([640,480]) * 2)
         
-        
-        
         # create target_capture folder, which is used to save target images
         self.target_capture_folder = os.path.join(os.getcwd(), 'src/yolo_detection/config/target_capture')
         os.makedirs(self.target_capture_folder, exist_ok=True)
+        
         # timer for publishing target image
         self.timer_period = 1.0  # seconds
         self.last_capture_time = time.time()
@@ -133,8 +132,10 @@ class YoloDetector(Node):
         # display frame to monitor
         resized_frame = cv2.resize(frame, self.monitor_size)
         cv2.imshow('YOLOv5 Detection', resized_frame)
+        # break whan keyinturrupt occurs    !!! DON'T REMOVE IT !!!
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            cv2.destroyAllWindows()
         
-
         '''
         MJPG streamer
         '''
@@ -152,13 +153,7 @@ class YoloDetector(Node):
         # break whan keyinturrupt occurs
         if cv2.waitKey(1) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
-        '''  
-            
-        # break whan keyinturrupt occurs    !!! DON'T REMOVE IT !!!
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            cv2.destroyAllWindows()
-            
-            
+        '''
     
     def publish_target_image(self, frame):
         image_msg = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
