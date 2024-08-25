@@ -55,7 +55,7 @@ class VehicleController(Node):
 
         # acceptance constants
         self.mc_acceptance_radius = 0.3
-        self.fw_acceptance_radius = 30
+        self.nearby_acceptance_radius = 30
         self.offboard_acceptance_radius = 2.0                   # mission -> offboard acceptance radius
         self.heading_acceptance_angle = 0.1                     # 0.1 rad = 5.73 deg
 
@@ -338,7 +338,9 @@ class VehicleController(Node):
 
     # Logging
     def log_timer_callback(self):
-        self.auto = int(self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD)
+        self.auto = int(self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION \
+                        or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD \
+                        or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LAND)
         if self.phase in [0, 7, 8, 9] :
             self.print(f"{self.auto}\t{self.phase}\t{self.subphase}\t{self.gps_time:.5e}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}")
 
@@ -354,7 +356,7 @@ class VehicleController(Node):
                 self.subphase = 'takeoff'
 
         elif self.phase in range(1, 7):
-            if np.linalg.norm(self.pos - self.WP[self.phase]) >= self.fw_acceptance_radius: # far from WP
+            if np.linalg.norm(self.pos - self.WP[self.phase]) >= self.nearby_acceptance_radius: # far from WP
                 if len(self.log_dict['gps_time']) == 0:
                     self.print(f"{self.auto}\t{self.phase}\t{self.subphase}\t{self.gps_time:.5e}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}")
                 else:
@@ -390,7 +392,7 @@ class VehicleController(Node):
                 }
                 self.error = [np.inf]
 
-            elif np.linalg.norm(self.pos - self.WP[self.phase]) < self.fw_acceptance_radius: # near WP
+            elif np.linalg.norm(self.pos - self.WP[self.phase]) < self.nearby_acceptance_radius: # near WP
                 # log stops printing, log info still being collected in array 
                 self.subphase = f'collecting log info'
 
@@ -570,6 +572,10 @@ class VehicleController(Node):
 
             elif self.subphase == 'auto landing':
                 if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_DISARMED:
+                    horizontal_error = np.linalg.norm(self.pos[:2] - self.WP[9][:2])
+                    self.print("--------------------------------------------")
+                    self.print(f"horizontal_error: {horizontal_error}")
+                    self.print("--------------------------------------------")
                     self.subphase = 'mission complete'
                     self.print('\n[subphase : auto landing -> mission complete]\n')
 
