@@ -74,7 +74,7 @@ class VehicleController(Node):
 
         # yolo constants
         self.image_size = np.array([640, 480])
-        self.critical_section = 0.1                             # check the middle 10% of the image in the horizontal direction
+        self.critical_section = 0.05                            # check the middle 10% of the image in the horizontal direction
         self.yolo_hz = 20                                       # theoretically 20Hz
         self.quick_time = 0.75                                  # 0.75 seconds
         self.focus_time = 4.0                                   # 4 seconds
@@ -535,6 +535,7 @@ class VehicleController(Node):
                 if np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.print(f"\nyolo wp{self.yolo_wp_checker} reached\n")
                     if self.yolo_wp_checker == 3:
+                        self.yolo_wp_checker = 1
                         self.goal_yaw = self.start_yaw
                         self.goal_position = self.WP[9]
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
@@ -548,12 +549,13 @@ class VehicleController(Node):
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.fast_vmax)
                 else:
                     self.run_bezier_curve(self.bezier_points)
-                    if self.obstacle and np.abs(self.obstacle_x - self.image_size[1] / 2) < self.critical_section * self.image_size[1]:
+                    if self.obstacle and self.yolo_wp_checker == 2 and np.abs(self.obstacle_x - self.image_size[0] / 2) < self.critical_section * self.image_size[0]:
                         self.obstacle = False
                         self.ladder_count += 1
                         self.print(f'Detected obstacle in critical section: {self.ladder_count} times')
                         if self.ladder_count >= self.yolo_hz * self.quick_time:
                             self.ladder_count = 0
+                            self.yolo_wp_checker = 1
                             self.goal_position = self.get_braking_position(self.pos, self.vel)
                             self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, np.linalg.norm(self.vel))
                             self.subphase = 'pause'
