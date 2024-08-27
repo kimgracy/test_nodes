@@ -40,9 +40,9 @@ class YoloDetector(Node):
         # Variables
         self.phase = '8'
         self.subphase = 'yolo_only'
-        self.y_threshold = 280
+        self.y_threshold = 80
         self.monitor_size = tuple(np.array([1280,720]) * 1)
-        self.yolo_size = tuple([640,480])
+        self.yolo_size = tuple([640,360])
 
 
         # define model path and load the model
