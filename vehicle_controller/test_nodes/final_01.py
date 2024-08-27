@@ -28,7 +28,7 @@ import serial
 import logging
 import numpy as np
 import pymap3d as p3d
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class VehicleController(Node):
 
@@ -73,9 +73,9 @@ class VehicleController(Node):
         self.yaw_speed = 0.1                                    # 0.1 rad = 5.73 deg
 
         # yolo constants
-        self.image_size = np.array([640, 480])
+        self.image_size = np.array([1280, 720])
         self.critical_section = 0.05                            # check the middle 10% of the image in the horizontal direction
-        self.yolo_hz = 20                                       # theoretically 20Hz
+        self.yolo_hz = 30                                       # theoretically 20Hz
         self.quick_time = 0.75                                  # 0.75 seconds
         self.focus_time = 4.0                                   # 4 seconds
 
@@ -93,7 +93,7 @@ class VehicleController(Node):
         self.log_dict = {
             'auto': [],
             'subphase': [],
-            'gps_time': [],
+            'utc_time': [],
             'pos[0]' : [],
             'pos[1]': [],
             'pos[2]': [],
@@ -171,8 +171,15 @@ class VehicleController(Node):
         if is_jetson():
             self.ser = serial.Serial('/dev/ttyGimbal', 115200)
 
-        # GPS time
-        self.gps_time = 0.0
+        # UTC time
+        self.utc_time = 0.0
+        self.utc_year = 0
+        self.utc_month = 0
+        self.utc_day = 0
+        self.utc_hour = 0
+        self.utc_min = 0
+        self.utc_sec = 0
+        self.utc_ms = 0
 
         """
         6. Create Subscribers
@@ -312,6 +319,12 @@ class VehicleController(Node):
             return np.linalg.norm(self.pos - goal_position) < acceptance_radius \
                     and np.abs((self.yaw - goal_yaw + np.pi) % (2 * np.pi) - np.pi) < acceptance_angle
     
+    def find_indices_below_threshold(self, arr, threshold):
+        return [i for i, value in enumerate(arr) if value < threshold]
+    
+    def intersection(self, arr1, arr2):
+        return [x for x in arr1 if x in arr2]
+    
 
     """
     Callback functions for the timers
@@ -337,19 +350,19 @@ class VehicleController(Node):
             self.ser.write(packet)
 
     # Logging
-    def log_timer_callback(self):
+    def log_timer_callback(self): # auto latitude longtitude altitude year month day hour min sec ms WPT
         self.auto = int(self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION \
                         or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD \
                         or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LAND)
         if self.phase in [0, 7, 8, 9] :
-            self.print(f"{self.auto}\t{self.phase}\t{self.subphase}\t{self.gps_time:.5e}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}")
+            self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year:.5e}\t{self.utc_month:.5e}\t{self.utc_day:.5e}\t{self.utc_hour:.5e}\t{self.utc_min:.5e}\t{self.utc_sec:.5e}\t{self.utc_ms:.5e}\t{self.phase}")
 
 
     def main_timer_callback(self):       
         if self.phase == 0:
             if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
                 and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                self.print('\n\n<< final_01 >>\n\n')
+                self.print('\n\n<< final_02 >>\n\n')
                 self.print("Mission mode requested\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
                 self.phase = 1
@@ -357,20 +370,48 @@ class VehicleController(Node):
 
         elif self.phase in range(1, 7):
             if np.linalg.norm(self.pos - self.WP[self.phase]) >= self.nearby_acceptance_radius: # far from WP
-                if len(self.log_dict['gps_time']) == 0:
-                    self.print(f"{self.auto}\t{self.phase}\t{self.subphase}\t{self.gps_time:.5e}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}")
+                if len(self.log_dict['utc_time']) == 0:
+                    self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year:.5e}\t{self.utc_month:.5e}\t{self.utc_day:.5e}\t{self.utc_hour:.5e}\t{self.utc_min:.5e}\t{self.utc_sec:.5e}\t{self.utc_ms:.5e}\t{self.phase}")
                 else:
-                    min_idx = self.error.index(min(self.error))
-                    vertical_error = np.abs(self.log_dict['pos[2]'][min_idx] - self.WP[self.phase][2])
-                    horizontal_error = np.linalg.norm(np.array([self.log_dict['pos[0]'][min_idx], self.log_dict['pos[1]'][min_idx]]) - self.WP[self.phase][:2])
-
+                    # horziontal error: np.linalg.norm(x error, y error)
+                    # vertical error: z error
                     self.print("--------------------------------------------")
-                    for i in range(len(self.log_dict['gps_time'])):
+                    # find min_idx
+                    horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 2)
+                    vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 4)
+                    min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
+
+                    if min_indices != [] : # (2,4) -> 20 points
+                        errors = self.error[min_indices[0]:min_indices[-1]]
+                        min_idx = self.error.index(min(errors))
+                        
+                    else :
+                        horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 4)
+                        vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 8)
+                        min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
+                        if min_indices != [] :
+                            errors = self.error[min_indices[0]:min_indices[-1]]
+                            min_idx = self.error.index(min(errors))
+                        else :
+                            horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 6)
+                            vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 12)
+                            min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
+                            if min_indices != [] :
+                                errors = self.error[min_indices[0]:min_indices[-1]]
+                                min_idx = self.error.index(min(errors))
+                            else :
+                                min_idx = self.error.index(min(self.error))
+
+                    for i in range(len(self.log_dict['utc_time'])):
+                        vertical_error = self.vertical_error[min_idx]
+                        horizontal_error = self.horizontal_error[min_idx]
                         if i < min_idx:
                             phase = self.phase
                         else:
                             phase = self.phase + 1
-                        self.print(f"{self.log_dict['auto'][i]}\t{phase}\t{self.log_dict['subphase'][i]}\t{self.log_dict['gps_time'][i]:.5e}\t{self.log_dict['pos_gps[0]'][i]:.6f}\t{self.log_dict['pos_gps[1]'][i]:.6f}\t{self.log_dict['pos_gps[2]'][i]:.6f}")
+                        self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year:.5e}\t{self.utc_month:.5e}\t{self.utc_day:.5e}\t{self.utc_hour:.5e}\t{self.utc_min:.5e}\t{self.utc_sec:.5e}\t{self.utc_ms:.5e}\t{self.phase}")
+
+
                     self.print("--------------------------------------------")
                     self.print(f"vertical_error: {vertical_error}, horizontal_error: {horizontal_error}")
                     self.print("--------------------------------------------")
@@ -382,7 +423,7 @@ class VehicleController(Node):
                 self.log_dict = {
                     'auto': [],
                     'subphase': [],
-                    'gps_time': [],
+                    'utc_time': [],
                     'pos[0]': [],
                     'pos[1]': [],
                     'pos[2]': [],
@@ -390,6 +431,8 @@ class VehicleController(Node):
                     'pos_gps[1]': [],
                     'pos_gps[2]': []
                 }
+                self.vertical_error = [np.inf]
+                self.horizontal_error = [np.inf]
                 self.error = [np.inf]
 
             elif np.linalg.norm(self.pos - self.WP[self.phase]) < self.nearby_acceptance_radius: # near WP
@@ -398,7 +441,7 @@ class VehicleController(Node):
 
                 self.log_dict['auto'].append(self.auto)
                 self.log_dict['subphase'].append(self.subphase)
-                self.log_dict['gps_time'].append(self.gps_time)
+                self.log_dict['utc_time'].append(self.utc_time)
                 self.log_dict['pos[0]'].append(self.pos[0])
                 self.log_dict['pos[1]'].append(self.pos[1])
                 self.log_dict['pos[2]'].append(self.pos[2])
@@ -406,7 +449,9 @@ class VehicleController(Node):
                 self.log_dict['pos_gps[1]'].append(self.pos_gps[1])
                 self.log_dict['pos_gps[2]'].append(self.pos_gps[2]) # collecting log info
 
-                self.error.append(np.linalg.norm(self.pos - self.WP[self.phase])) # collect error info
+                self.vertical_error.append(np.abs(self.pos[2] - self.WP[self.phase][2]))
+                self.horizontal_error.append(np.linalg.norm(np.array([self.pos[0], self.pos[1]]) - self.WP[self.phase][:2])) # collecting error info
+                self.error.append(np.sqrt((self.pos[2] - self.WP[self.phase][2])**2 + (np.linalg.norm(np.array([self.pos[0], self.pos[1]]) - self.WP[self.phase][:2]))**2))
                 
 
         elif self.phase == 7:
@@ -418,13 +463,6 @@ class VehicleController(Node):
                             param1=1.0, # main mode
                             param2=6.0  # offboard mode
                         )
-                        vertical_error = np.abs(self.pos[2] - self.WP[7][2])
-                        horizontal_error = np.linalg.norm(self.pos[:2] - self.WP[7][:2])
-                        self.print("--------------------------------------------")
-                        self.print(f"vertical_error: {vertical_error}, horizontal_error: {horizontal_error}")
-                        self.print("--------------------------------------------")
-                        self.print("\nWP7 reached")
-                        self.print("Offboard control mode requested\n")
                 
                 elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
                     self.gimbal_pitch = -15.0
@@ -444,8 +482,16 @@ class VehicleController(Node):
                     self.print('\n[subphase : pause -> align to vertiport]\n')
             
             elif self.subphase == 'align to vertiport':
-                self.run_bezier_curve(self.bezier_points, self.goal_yaw)
+                self.run_bezier_curve(self.bezier_points, self.goal_yaw)           
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
+                    vertical_error = np.abs(self.pos[2] - self.WP[7][2])
+                    horizontal_error = np.linalg.norm(self.pos[:2] - self.WP[7][:2])
+                    self.print("--------------------------------------------")
+                    self.print(f"vertical_error: {vertical_error}, horizontal_error: {horizontal_error}")
+                    self.print("--------------------------------------------")
+                    self.print("\nWP7 reached")
+                    self.print("Offboard control mode requested\n")
+
                     self.goal_position = self.WP[8]
                     self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
                     self.phase = 8
@@ -609,8 +655,15 @@ class VehicleController(Node):
         self.pos_gps = np.array([msg.lat, msg.lon, msg.alt])
 
     def vehicle_gps_callback(self, msg):
-        # TODO: check the time of the GPS message
-        self.gps_time = (msg.time_utc_usec / 1000000 + 18) % 604800     # consider leap second & GPS seconds
+        self.utc_time = msg.time_utc_usec
+        self.utc_datetime = datetime(1970, 1, 1) + timedelta(microseconds=self.utc_time)
+        self.utc_year = self.utc_datetime.year
+        self.utc_month = self.utc_datetime.month
+        self.utc_day = self.utc_datetime.day
+        self.utc_hour = self.utc_datetime.hour
+        self.utc_minute = self.utc_datetime.minute
+        self.utc_sec = self.utc_datetime.second
+        self.utc_ms = self.utc_datetime.microsecond // 1000  # Convert microseconds to milliseconds
     
     def yolo_obstacle_callback(self, msg):
         self.obstacle = True
@@ -691,7 +744,7 @@ def is_jetson():
             return True
     except FileNotFoundError:
         return False
-
+    
     
 def main(args = None):
     rclpy.init(args=args)
