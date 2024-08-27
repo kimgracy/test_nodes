@@ -49,7 +49,7 @@ setup(
             'fw_test_02 = test_nodes.fw_test_02_pturn:main',
             'mode_test_00 = test_nodes.mode_test_00:main',
             'mission_test_01 = test_nodes.mission_test_01:main',
-            'final_01 = test_nodes.final_01:main',
+            'final_01 = test_nodes.final_01:main'
         ],
     },
 )
