@@ -105,12 +105,11 @@ class YoloDetector(Node):
                     y_center = (y1 + y2) / 2
                     
                     # publish obstacle message and draw bounding box
-                    # if ((abs(y1-y2) >= self.y_threshold) and (label == 'ladder-truck' or label == 'class4')):
-                    if ((label == 'ladder-truck' or label == 'class4')):
+                    if (abs(y1-y2) >= self.y_threshold) and ((label == 'ladder-truck' or label == 'class4')):
                         # draw bounding box and label
                         label = 'ladder'
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
-                        cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
                         
                         # publish obstacle message when phase is 8
                         #if (self.phase == '8'):
@@ -135,11 +134,11 @@ class YoloDetector(Node):
         Display frame to monitor
         """
         # add phase information to the frame in black color
-        cv2.putText(frame, f'Phase: {self.phase}', (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 0), 2)
-        cv2.putText(frame, f'Subphase: {self.subphase}', (10, 75), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 0), 2)
-
-        # display frame to monitor
         resized_frame = cv2.resize(frame, self.monitor_size)
+        cv2.putText(resized_frame, f'Phase: {self.phase}', (10, 67), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
+        cv2.putText(resized_frame, f'Subphase: {self.subphase}', (10, 130), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
+        
+        # display frame to monitor
         cv2.imshow('YOLOv5 Detection', resized_frame)
 
         # break whan keyinturrupt occurs    !!! DON'T REMOVE IT !!!
