@@ -105,8 +105,7 @@ class YoloDetector(Node):
                     y_center = (y1 + y2) / 2
                     
                     # publish obstacle message and draw bounding box
-                    # if ((abs(y1-y2) >= self.y_threshold) and (label == 'ladder-truck' or label == 'class4')):
-                    if ((label == 'ladder-truck' or label == 'class4')):
+                    if (abs(y1-y2) >= self.y_threshold) and ((label == 'ladder-truck' or label == 'class4')):
                         # draw bounding box and label
                         label = 'ladder'
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
