@@ -55,7 +55,7 @@ class VehicleController(Node):
 
         # acceptance constants
         self.mc_acceptance_radius = 0.3
-        self.nearby_acceptance_radius = 30
+        self.nearby_acceptance_radius = 30 / 6                  # change by kimgracy - descale (/6)
         self.offboard_acceptance_radius = 10.0                   # mission -> offboard acceptance radius
         self.heading_acceptance_angle = 0.1                     # 0.1 rad = 5.73 deg
 
@@ -74,10 +74,10 @@ class VehicleController(Node):
 
         # yolo constants
         self.image_size = np.array([1280, 720])
-        self.critical_section = 0.05                            # check the middle 10% of the image in the horizontal direction
+        self.critical_section = 0.1                             # check the middle 20% of the image in the horizontal direction
         self.yolo_hz = 30                                       # theoretically 20Hz
-        self.quick_time = 0.75                                  # 0.75 seconds
-        self.focus_time = 4.0                                   # 4 seconds
+        self.quick_time = 1.0                                   # 1 seconds
+        self.focus_time = 5.0                                   # 5 seconds
 
         """
         2. Logging setup
@@ -162,7 +162,7 @@ class VehicleController(Node):
         self.obstacle_y = 0
         self.left_or_right = 0
         self.ladder_count = 0
-        self.no_ladder_count = 0
+        self.yolo_time_count = 0
         self.yolo_wp_checker = 1
         self.yolo_WP = [np.array([0.0, 0.0, 0.0]),np.array([0.0, 0.0, 0.0]),np.array([0.0, 0.0, 0.0]),np.array([0.0, 0.0, 0.0])]
 
@@ -362,7 +362,7 @@ class VehicleController(Node):
         if self.phase == 0:
             if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
                 and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                self.print('\n\n<< final_02 >>\n\n')
+                self.print('\n\n<< final_01 >>\n\n')
                 self.print("Mission mode requested\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
                 self.phase = 1
@@ -377,30 +377,46 @@ class VehicleController(Node):
                     # vertical error: z error
                     self.print("--------------------------------------------")
                     # find min_idx
-                    horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 2)
-                    vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 4)
+                    # changed by kimgracy - descale (/10)
+                    horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 2 / 10)
+                    vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 4 / 10)
                     min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
 
                     if min_indices != [] : # (2,4) -> 20 points
-                        errors = self.error[min_indices[0]:min_indices[-1]]
+                        print(min_indices)
+                        if len(min_indices) == 1 :
+                            errors = [self.error[min_indices[0]]]
+                        else :
+                            errors = self.error[min_indices[0]:min_indices[-1]]
                         min_idx = self.error.index(min(errors))
                         
+                        
                     else :
-                        horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 4)
-                        vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 8)
+                        # changed by kimgracy - descale (/10)
+                        horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 4 / 10)
+                        vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 8 / 10)
                         min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
                         if min_indices != [] :
-                            errors = self.error[min_indices[0]:min_indices[-1]]
+                            print(min_indices)
+                            if len(min_indices) == 1 :
+                                errors = [self.error[min_indices[0]]]
+                            else :
+                                errors = self.error[min_indices[0]:min_indices[-1]]
                             min_idx = self.error.index(min(errors))
                         else :
-                            horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 6)
-                            vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 12)
+                            horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 6 / 10)
+                            vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 12 / 10)
                             min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
                             if min_indices != [] :
-                                errors = self.error[min_indices[0]:min_indices[-1]]
+                                print(min_indices)
+                                if len(min_indices) == 1 :
+                                    errors = [self.error[min_indices[0]]]
+                                else :
+                                    errors = self.error[min_indices[0]:min_indices[-1]]
                                 min_idx = self.error.index(min(errors))
                             else :
                                 min_idx = self.error.index(min(self.error))
+
 
                     for i in range(len(self.log_dict['utc_time'])):
                         vertical_error = self.vertical_error[min_idx]
@@ -489,8 +505,6 @@ class VehicleController(Node):
                     self.print("--------------------------------------------")
                     self.print(f"vertical_error: {vertical_error}, horizontal_error: {horizontal_error}")
                     self.print("--------------------------------------------")
-                    self.print("\nWP7 reached")
-                    self.print("Offboard control mode requested\n")
 
                     self.goal_position = self.WP[8]
                     self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
@@ -542,14 +556,9 @@ class VehicleController(Node):
             
             elif self.subphase == 'detecting obstacle':
                 self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.goal_yaw)
-                if self.obstacle:
-                    self.obstacle = False
-                    self.ladder_count += 1
-                    self.left_or_right += 1 if self.obstacle_x > (self.image_size[0] / 2) else -1
-                    self.print(f'Detected obstacle : {self.ladder_count} times, ({self.obstacle_x}, {self.obstacle_y})')
-
-                    # create the avoidance path
-                    if self.ladder_count >= self.yolo_hz * self.focus_time:
+                if self.yolo_time_count >= self.yolo_hz * self.focus_time:
+                    obstacle_detect_ratio = self.ladder_count / self.yolo_time_count
+                    if obstacle_detect_ratio >= 0.55:
                         self.print(f'Ladder-truck Orientation: {"right" if self.left_or_right > 0 else "left"}')
                         self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[7], self.WP[8])
                         avoid_direction = np.array([np.cos(self.goal_yaw - np.sign(self.left_or_right) * np.pi/2), np.sin(self.goal_yaw - np.sign(self.left_or_right) * np.pi/2), 0.0])
@@ -558,23 +567,30 @@ class VehicleController(Node):
                         self.yolo_WP[2] = self.WP[8] + self.corridor_radius * avoid_direction
                         self.yolo_WP[3] = self.WP[8]
                         self.ladder_count = 0
-                        self.no_ladder_count = 0
+                        self.yolo_time_count = 0
                         self.left_or_right = 0
                         self.goal_position = self.yolo_WP[self.yolo_wp_checker]
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.very_slow_vmax)  # very slow (not to go out of the corridor)
                         self.subphase = 'avoiding obstacle'
                         self.print('\n[subphase : detecting obstacle -> avoiding obstacle]\n')
-                
-                else:
-                    self.no_ladder_count += 1
-                    if self.no_ladder_count >= self.yolo_hz * self.focus_time:
+                    else:
                         self.ladder_count = 0
-                        self.no_ladder_count = 0
+                        self.yolo_time_count = 0
                         self.left_or_right = 0
                         self.goal_position = self.WP[8]
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
                         self.subphase = 'go slow'
                         self.print('\n[subphase : detecting obstacle -> go slow]\n')
+
+                else:
+                    self.yolo_time_count += 1
+                    if self.obstacle:
+                        self.obstacle = False
+                        self.ladder_count += 1
+                        self.left_or_right += 1 if self.obstacle_x > (self.image_size[0] / 2) else -1
+                        self.print(f'Detected obstacle : {self.ladder_count} times, ({self.obstacle_x}, {self.obstacle_y})')
+                    else:
+                        pass
 
             elif self.subphase == 'avoiding obstacle':
                 # go along with ractangle path. but if you find obstacle being in front of you  =>  'pause'.
