@@ -82,6 +82,8 @@ class VehicleController(Node):
         # auto landing constants
         self.gimbal_time = 10.0                                 # 10 seconds
         self.landing_vmax = 0.5
+        self.landing_command_height = 0.5
+        self.landing_acceptance = 0.05
 
         """
         2. Logging setup
@@ -240,6 +242,7 @@ class VehicleController(Node):
         
         print("Successfully executed: vehicle_controller")
         print("Start the mission\n")
+        self.print(f"Auto\tLatitude\tLongtitude\tAltitude\tUTC Year\tUTC Month\tUTC Day\tUTC Hour\tUTC Min\tUTC Sec\tUTC ms\tWPT number")
 
     
     """
@@ -646,23 +649,27 @@ class VehicleController(Node):
                 self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.goal_yaw)
                 if self.gimbal_counter >= self.gimbal_time / self.time_period:
                     if self.apriltag:
-                        self.print("\nApriltag detected\n")
+                        self.print("\nApriltag detected")
+                        self.print(f"goal position: {self.apriltag_position}\n")
                         self.apriltag = False
                         self.goal_position = self.apriltag_position
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.landing_vmax)
                     else:
                         self.print("\nApriltag not detected\n")
-                        self.goal_position = np.array([0.0, 0.0, -0.4])
+                        self.goal_position = np.array([0.0, 0.0, -self.landing_command_height])
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.landing_vmax)
                     self.subphase = 'auto landing'
                     self.print('\n[subphase : prepare landing -> auto landing]\n')
 
             elif self.subphase == 'auto landing':
                 self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                if np.linalg.norm(self.pos[:2] - self.goal_position[:2]) < self.mc_acceptance_radius and np.abs(self.pos[2]) < 0.5:
+                if np.linalg.norm(self.pos[:2] - self.goal_position[:2]) < self.mc_acceptance_radius \
+                    and (np.abs(self.pos[2]) < self.landing_command_height or np.abs(self.pos[2] - self.goal_position[2]) < self.landing_acceptance):
                     self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
                     self.subphase = 'landing'
-                    self.print('\n[subphase : auto landing -> landing]\n')
+                    self.print(f"\nhorizontal_error: {np.linalg.norm(self.pos[:2] - self.goal_position[:2])}")
+                    self.print(f"height: {self.pos[2]}")
+                    self.print('[subphase : auto landing -> landing]\n')
 
             elif self.subphase == 'landing':
                 if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_DISARMED:

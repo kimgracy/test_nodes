@@ -231,6 +231,7 @@ class VehicleController(Node):
         
         print("Successfully executed: vehicle_controller")
         print("Start the mission\n")
+        self.print(f"Auto\tLatitude\tLongtitude\tAltitude\tUTC Year\tUTC Month\tUTC Day\tUTC Hour\tUTC Min\tUTC Sec\tUTC ms\tWPT number")
 
     
     """
