@@ -4,11 +4,13 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPo
 
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
+from tf2_msgs.msg import TFMessage as TfMsg
 from my_bboxes_msg.msg import YoloObstacle, YoloTarget, VehiclePhase
 
 import os
 import sys
 import time
+import yaml
 
 import cv2
 import torch
@@ -41,8 +43,23 @@ class YoloDetector(Node):
         self.phase = '8'
         self.subphase = 'yolo_only'
         self.y_threshold = 80
-        self.monitor_size = tuple(np.array([1280,720]) * 1)
-        self.yolo_size = tuple([640,360])
+        self.frame_size = (1280, 720)
+        self.yolo_size = (640, 360)
+
+
+        # load camera info from yaml file
+        self.camera_info = None
+        self.camera_info_file = os.path.join(os.getcwd(), 'src/usb_cam/config/camera_info.yaml')
+        if os.path.exists(self.camera_info_file):
+            with open(self.camera_info_file, 'r') as f:
+                self.camera_info = yaml.load(f, Loader=yaml.FullLoader)['camera_matrix']['data']
+        print(f"Camera info: {self.camera_info}")
+
+
+        # apriltag detection
+        self.apriltag_detected = False
+        self.apriltag_x = 0
+        self.apriltag_y = 0
 
 
         # define model path and load the model
@@ -61,6 +78,7 @@ class YoloDetector(Node):
         # Subscribers
         self.vehicle_phase_subscriber = self.create_subscription(VehiclePhase, '/vehicle_phase', self.phase_callback, qos_profile)
         self.image_subscriber = self.create_subscription(Image, '/image_raw', self.image_callback, 10)
+        self.apriltag_subscriber = self.create_subscription(TfMsg, 'tf', self.apriltag_callback, 10)
         
 
         # create target_capture folder, which is used to save target images
@@ -134,12 +152,20 @@ class YoloDetector(Node):
         Display frame to monitor
         """
         # add phase information to the frame in black color
-        resized_frame = cv2.resize(frame, self.monitor_size)
-        cv2.putText(resized_frame, f'Phase: {self.phase}', (10, 67), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
-        cv2.putText(resized_frame, f'Subphase: {self.subphase}', (10, 130), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
+        cv2.putText(frame, f'Phase: {self.phase}', (10, 67), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
+        cv2.putText(frame, f'Subphase: {self.subphase}', (10, 130), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
+
+
+        """
+        Display apriltag position
+        """
+        if self.apriltag_detected:
+            cv2.circle(frame, (int(self.apriltag_x), int(self.apriltag_y)), 10, (0, 255, 0), -1)
+            self.apriltag_detected = False
+
         
         # display frame to monitor
-        cv2.imshow('YOLOv5 Detection', resized_frame)
+        cv2.imshow('YOLOv5 Detection', frame)
 
         # break whan keyinturrupt occurs    !!! DON'T REMOVE IT !!!
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -161,6 +187,16 @@ class YoloDetector(Node):
         self.phase = msg.phase
         self.subphase = msg.subphase
 
+
+    def apriltag_callback(self, msg):
+        # get apriltag position
+        try:
+            point_3d = msg.transforms[0].transform.translation
+            self.apriltag_x = (self.camera_info[0] * point_3d.x / point_3d.z) + self.camera_info[2]
+            self.apriltag_y = (self.camera_info[4] * point_3d.y / point_3d.z) + self.camera_info[5]
+            self.apriltag_detected = True
+        except:
+            self.apriltag_detected = False
 
 
 

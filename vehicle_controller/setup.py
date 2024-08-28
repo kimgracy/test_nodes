@@ -25,6 +25,7 @@ setup(
         'console_scripts': [
             'taean = test_nodes.taean_controller:main',
             'obstacle_speaker = test_nodes.obstacle_speaker:main',
+            'apriltag_speaker = test_nodes.apriltag_speaker:main',
             'gimbal_test = test_nodes.gimbal_test:main',
             'mc_test_00 = test_nodes.mc_test_00_arm:main',
             'mc_test_01 = test_nodes.mc_test_01_takeoff_and_land:main',
@@ -49,7 +50,8 @@ setup(
             'fw_test_02 = test_nodes.fw_test_02_pturn:main',
             'mode_test_00 = test_nodes.mode_test_00:main',
             'mission_test_01 = test_nodes.mission_test_01:main',
-            'final_01 = test_nodes.final_01:main'
+            'final_01 = test_nodes.final_01:main',
+            'final_02 = test_nodes.final_02:main'
         ],
     },
 )
