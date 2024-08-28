@@ -216,7 +216,7 @@ class VehicleController(Node):
             VehiclePhase, '/vehicle_phase', qos_profile
         )
         self.start_yaw_publisher = self.create_publisher(
-            Float32MultiArray, '/auto_land_home_info', qos_profile
+            Float32MultiArray, '/auto_land_home_info', 10
         )
 
         """
@@ -637,7 +637,7 @@ class VehicleController(Node):
 
             elif self.subphase == 'auto landing':
                 if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_DISARMED:
-                    horizontal_error = np.linalg.norm(self.pos[:2] - self.WP[9][:2])
+                    horizontal_error = np.linalg.norm(self.pos[:2])
                     self.print("--------------------------------------------")
                     self.print(f"horizontal_error: {horizontal_error}")
                     self.print("--------------------------------------------")
