@@ -15,8 +15,8 @@ class Filter(Node):
             10
         )
         self.publisher = self.create_publisher(Float32MultiArray, 'bezier_waypoint', 10)
-        self.raw_values = deque([], maxlen=10)  # 최대 크기를 지정하여 자동으로 관리
-        self.raw_values_2 = deque([], maxlen=30)
+        self.raw_values = deque([], maxlen=5)  # 최대 크기를 지정하여 자동으로 관리
+        self.raw_values_2 = deque([], maxlen=5)
 
     def tag_callback(self, msg):
         tag_world = np.array(msg.data)
@@ -31,6 +31,7 @@ class Filter(Node):
                 avg_msg = Float32MultiArray()
                 avg_msg.data = average_2.tolist()
                 self.publisher.publish(avg_msg)
+
         
         
 
