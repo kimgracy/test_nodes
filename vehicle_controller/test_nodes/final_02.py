@@ -55,9 +55,9 @@ class VehicleController(Node):
 
         # acceptance constants
         self.mc_acceptance_radius = 0.3
-        self.nearby_acceptance_radius = 30 / 6                  # change by kimgracy - descale (/6)
+        self.nearby_acceptance_radius = 30
         self.offboard_acceptance_radius = 10.0                   # mission -> offboard acceptance radius
-        self.heading_acceptance_angle = 0.1                     # 0.1 rad = 5.73 deg
+        self.heading_acceptance_angle = 0.1                      # 0.1 rad = 5.73 deg
 
         # bezier curve constants
         self.fast_vmax = 5.0
@@ -242,7 +242,7 @@ class VehicleController(Node):
         
         print("Successfully executed: vehicle_controller")
         print("Start the mission\n")
-        self.print(f"Auto\tLatitude\tLongtitude\tAltitude\tUTC Year\tUTC Month\tUTC Day\tUTC Hour\tUTC Min\tUTC Sec\tUTC ms\tWPT number")
+        self.print("Auto Latitude	Longtitude	 Altitude	  UTC Year	 UTC Month	  UTC Day	  UTC Hour	  UTC Min	  UTC Sec	   UTC ms  WPT")
 
     
     """
@@ -390,9 +390,8 @@ class VehicleController(Node):
                     # vertical error: z error
                     self.print("--------------------------------------------")
                     # find min_idx
-                    # changed by kimgracy - descale (/10)
-                    horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 2 / 10)
-                    vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 4 / 10)
+                    horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 2 )
+                    vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 4)
                     min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
 
                     if min_indices != [] : # (2,4) -> 20 points
@@ -405,9 +404,8 @@ class VehicleController(Node):
                         
                         
                     else :
-                        # changed by kimgracy - descale (/10)
-                        horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 4 / 10)
-                        vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 8 / 10)
+                        horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 4)
+                        vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 8)
                         min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
                         if min_indices != [] :
                             print(min_indices)
