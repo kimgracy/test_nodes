@@ -55,9 +55,9 @@ class VehicleController(Node):
 
         # acceptance constants
         self.mc_acceptance_radius = 0.3
-        self.nearby_acceptance_radius = 30 / 6                  # change by kimgracy - descale (/6)
+        self.nearby_acceptance_radius = 30
         self.offboard_acceptance_radius = 10.0                   # mission -> offboard acceptance radius
-        self.heading_acceptance_angle = 0.1                     # 0.1 rad = 5.73 deg
+        self.heading_acceptance_angle = 0.1                      # 0.1 rad = 5.73 deg
 
         # bezier curve constants
         self.fast_vmax = 5.0
@@ -78,6 +78,9 @@ class VehicleController(Node):
         self.yolo_hz = 30                                       # theoretically 20Hz
         self.quick_time = 1.0                                   # 1 seconds
         self.focus_time = 5.0                                   # 5 seconds
+
+        # auto landing constants
+        self.gimbal_time = 10.0                                 # 10 seconds
 
         """
         2. Logging setup
@@ -168,6 +171,7 @@ class VehicleController(Node):
 
         # gimbal
         self.gimbal_pitch = 0.0
+        self.gimbal_counter = 0
         if is_jetson():
             self.ser = serial.Serial('/dev/ttyGimbal', 115200)
 
@@ -231,7 +235,7 @@ class VehicleController(Node):
         
         print("Successfully executed: vehicle_controller")
         print("Start the mission\n")
-        self.print(f"Auto\tLatitude\tLongtitude\tAltitude\tUTC Year\tUTC Month\tUTC Day\tUTC Hour\tUTC Min\tUTC Sec\tUTC ms\tWPT number")
+        self.print("Auto Latitude	Longtitude	 Altitude	  UTC Year	 UTC Month	  UTC Day	  UTC Hour	  UTC Min	  UTC Sec	   UTC ms  WPT")
 
     
     """
@@ -378,9 +382,8 @@ class VehicleController(Node):
                     # vertical error: z error
                     self.print("--------------------------------------------")
                     # find min_idx
-                    # changed by kimgracy - descale (/10)
-                    horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 2 / 10)
-                    vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 4 / 10)
+                    horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 2 )
+                    vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 4)
                     min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
 
                     if min_indices != [] : # (2,4) -> 20 points
@@ -393,9 +396,8 @@ class VehicleController(Node):
                         
                         
                     else :
-                        # changed by kimgracy - descale (/10)
-                        horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 4 / 10)
-                        vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 8 / 10)
+                        horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 4)
+                        vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 8)
                         min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
                         if min_indices != [] :
                             print(min_indices)
@@ -629,11 +631,18 @@ class VehicleController(Node):
                 self.gimbal_pitch = -90.0
                 self.run_bezier_curve(self.bezier_points, self.goal_yaw)
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
+                    self.subphase = 'prepare landing'
+                    self.print('\n[subphase : landing align -> prepare landing]\n')
+
+            elif self.subphase == 'prepare landing':
+                self.gimbal_counter += 1
+                self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.goal_yaw)
+                if self.gimbal_counter >= self.gimbal_time / self.time_period:
                     home_info = Float32MultiArray()
                     home_info.data = list(self.home_position) + [self.start_yaw]      # [N, E, D, yaw]
                     self.start_yaw_publisher.publish(home_info)
                     self.subphase = 'auto landing'
-                    self.print('\n[subphase : align -> auto landing]\n')
+                    self.print('\n[subphase : prepare landing -> auto landing]\n')
 
             elif self.subphase == 'auto landing':
                 if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_DISARMED:

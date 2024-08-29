@@ -640,7 +640,7 @@ class VehicleController(Node):
                 self.run_bezier_curve(self.bezier_points, self.goal_yaw)
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.subphase = 'prepare landing'
-                    self.print('\n[subphase : align -> prepare landing]\n')
+                    self.print('\n[subphase : landing align -> prepare landing]\n')
 
             elif self.subphase == 'prepare landing':
                 self.gimbal_counter += 1
