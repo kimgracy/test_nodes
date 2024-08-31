@@ -44,22 +44,6 @@ def generate_launch_description():
     composable_nodes = [
         ComposableNode(
             package='image_proc',
-            plugin='image_proc::DebayerNode',
-            name='debayer_node',
-        ),
-        ComposableNode(
-            package='image_proc',
-            plugin='image_proc::RectifyNode',
-            name='rectify_mono_node',
-            # Remap subscribers and publishers
-            remappings=[
-                ('image', '/image_raw'),
-                ('camera_info', '/camera_info'),
-                ('image_rect', 'image_rect')
-            ],
-        ),
-        ComposableNode(
-            package='image_proc',
             plugin='image_proc::RectifyNode',
             name='rectify_color_node',
             # Remap subscribers and publishers
