@@ -81,9 +81,6 @@ class VehicleController(Node):
 
         # auto landing constants
         self.gimbal_time = 15.0                                 # 15 seconds
-        self.landing_vmax = 0.5
-        self.landing_command_height = 0.5
-        self.landing_acceptance = 0.1
         self.auto_landing_height = 7.0                          # start auto landing at 7m
 
         """
@@ -179,10 +176,6 @@ class VehicleController(Node):
         if is_jetson():
             self.ser = serial.Serial('/dev/ttyGimbal', 115200)
 
-        # auto landing
-        self.apriltag = False
-        self.apriltag_position = np.array([0.0, 0.0, 0.0])
-
         # UTC time
         self.utc_time = 0.0
         self.utc_year = 0
@@ -211,9 +204,6 @@ class VehicleController(Node):
         self.gps_subscriber = self.create_subscription(
             SensorGps, '/fmu/out/vehicle_gps_position', self.vehicle_gps_callback, qos_profile
         )
-        self.apriltag_subscriber = self.create_subscription(
-            Float32MultiArray, '/bezier_waypoint', self.apriltag_callback, 10
-        )
 
         """
         7. Create Publishers
@@ -229,6 +219,9 @@ class VehicleController(Node):
         )
         self.vehicle_phase_publisher = self.create_publisher(
             VehiclePhase, '/vehicle_phase', qos_profile
+        )
+        self.start_yaw_publisher = self.create_publisher(
+            Float32MultiArray, '/auto_land_home_info', 10
         )
 
         """
@@ -264,7 +257,6 @@ class VehicleController(Node):
             self.WP.append(wp_position)
         self.WP.append(np.array([0.0, 0.0, -self.landing_height]))  # landing position
         self.WP.append(np.array([-self.camera_to_center * np.cos(self.start_yaw), -self.camera_to_center * np.sin(self.start_yaw), -self.auto_landing_height]))  # set the camera's position to the home position
-        self.print(f'home position: {self.home_position}')
         self.print(f'WP: {self.WP}\n')
 
     def generate_bezier_curve(self, xi, xf, vmax):
@@ -361,21 +353,55 @@ class VehicleController(Node):
         self.auto = int(self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION \
                         or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD \
                         or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LAND)
-        if self.phase in [0, 7, 8, 9] :
+        if self.phase in [0, 1, 7, 8, 9] :
             self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year:.5e}\t{self.utc_month:.5e}\t{self.utc_day:.5e}\t{self.utc_hour:.5e}\t{self.utc_min:.5e}\t{self.utc_sec:.5e}\t{self.utc_ms:.5e}\t{self.phase}")
 
 
     def main_timer_callback(self):       
         if self.phase == 0:
-            if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
-                and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                self.print('\n\n<< final_02 >>\n\n')
-                self.print("Mission mode requested\n")
+            if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                self.print('\n\n<< final_05 >>\n\n')
+                self.print("Offboard mode requested\n")
+                self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_TAKEOFF)
+                self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
+            elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_TAKEOFF:
                 self.convert_global_to_local_waypoint(self.pos_gps)
                 self.phase = 1
                 self.subphase = 'takeoff'
+                self.print('\n[phase : 0 -> 1]\n')
 
-        elif self.phase in range(1, 7):
+        elif self.phase == 1:
+            if self.subphase == 'takeoff':
+                if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LOITER:
+                    self.publish_vehicle_command(
+                        VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
+                        param1=1.0, # main mode
+                        param2=6.0  # offboard
+                    )
+                elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                    self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[1], self.WP[2])
+                    self.goal_position = self.WP[1]
+                    self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.fast_vmax)
+                    self.subphase = 'heading to WP[1]'
+                    self.print('\n[subphase : takeoff -> heading to WP[1]]\n')
+
+            elif self.subphase == 'heading to WP[1]':
+                if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                    self.run_bezier_curve(self.bezier_points, self.goal_yaw)
+                    if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
+                        self.publish_vehicle_command(
+                            VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
+                            param1=1.0, # main mode
+                            param2=4.0, # auto
+                            param3=4.0  # mission
+                        )
+                elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
+                    self.phase = 2
+                    self.subphase = 'heading to WP[2]'
+                    self.print('\n[phase : 1 -> 2]')
+                    self.print('[subphase : heading to WP[1] -> heading to WP[2]]\n')
+
+        elif self.phase in range(2, 7):
             if np.linalg.norm(self.pos - self.WP[self.phase]) >= self.nearby_acceptance_radius: # far from WP
                 if len(self.log_dict['utc_time']) == 0:
                     self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year:.5e}\t{self.utc_month:.5e}\t{self.utc_day:.5e}\t{self.utc_hour:.5e}\t{self.utc_min:.5e}\t{self.utc_sec:.5e}\t{self.utc_ms:.5e}\t{self.phase}")
@@ -640,30 +666,13 @@ class VehicleController(Node):
                 self.gimbal_counter += 1
                 self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.goal_yaw)
                 if self.gimbal_counter >= self.gimbal_time / self.time_period:
-                    if self.apriltag:
-                        self.print("\nApriltag detected")
-                        self.print(f"goal position: {self.apriltag_position}\n")
-                        self.apriltag = False
-                        self.goal_position = self.apriltag_position
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.landing_vmax)
-                    else:
-                        self.print("\nApriltag not detected\n")
-                        self.goal_position = np.array([0.0, 0.0, -self.landing_command_height - self.landing_acceptance])
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.landing_vmax)
+                    home_info = Float32MultiArray()
+                    home_info.data = list(self.home_position) + [self.start_yaw]      # [N, E, D, yaw]
+                    self.start_yaw_publisher.publish(home_info)
                     self.subphase = 'auto landing'
                     self.print('\n[subphase : prepare landing -> auto landing]\n')
 
             elif self.subphase == 'auto landing':
-                self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                if np.linalg.norm(self.pos[:2] - self.goal_position[:2]) < self.mc_acceptance_radius \
-                    and (np.abs(self.pos[2]) < self.landing_command_height or np.abs(self.pos[2] - self.goal_position[2]) < self.landing_acceptance):
-                    self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
-                    self.subphase = 'landing'
-                    self.print(f"\nhorizontal_error: {np.linalg.norm(self.pos[:2] - self.goal_position[:2])}")
-                    self.print(f"height: {self.pos[2]}")
-                    self.print('[subphase : auto landing -> landing]\n')
-
-            elif self.subphase == 'landing':
                 if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_DISARMED:
                     horizontal_error = np.linalg.norm(self.pos[:2])
                     self.print("--------------------------------------------")
@@ -714,10 +723,6 @@ class VehicleController(Node):
         self.obstacle = True
         self.obstacle_x = int(msg.x)
         self.obstacle_y = int(msg.y)
-
-    def apriltag_callback(self, msg):
-        self.apriltag = True
-        self.apriltag_position = np.array(msg.data[0:3]) + np.array([np.cos(self.start_yaw), np.sin(self.start_yaw), 0.0]) * self.camera_to_center - self.home_position
 
     """
     Functions for publishing topics.
