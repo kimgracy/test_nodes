@@ -53,10 +53,10 @@ class VehicleController(Node):
         self.landing_height = 5.0                               # prepare auto landing at 5m
         self.corridor_radius = 2.0
 
-        # acceptance constants
+        # acceptance constants (rescaled)
         self.mc_acceptance_radius = 0.3
-        self.nearby_acceptance_radius = 30
-        self.offboard_acceptance_radius = 10.0                   # mission -> offboard acceptance radius
+        self.nearby_acceptance_radius = 30 / 6
+        self.offboard_acceptance_radius = 5.0                   # mission -> offboard acceptance radius
         self.heading_acceptance_angle = 0.1                      # 0.1 rad = 5.73 deg
 
         # bezier curve constants
@@ -75,15 +75,12 @@ class VehicleController(Node):
         # yolo constants
         self.image_size = np.array([1280, 720])
         self.critical_section = 0.1                             # check the middle 20% of the image in the horizontal direction
-        self.yolo_hz = 30                                       # theoretically 20Hz
+        self.yolo_hz = 10                                       # theoretically 20Hz
         self.quick_time = 1.0                                   # 1 seconds
         self.focus_time = 5.0                                   # 5 seconds
 
         # auto landing constants
         self.gimbal_time = 15.0                                 # 15 seconds
-        self.landing_vmax = 0.5
-        self.landing_command_height = 0.5
-        self.landing_acceptance = 0.1
         self.auto_landing_height = 7.0                          # start auto landing at 7m
 
         """
@@ -118,7 +115,7 @@ class VehicleController(Node):
         self.home_position = np.array([0.0, 0.0, 0.0])
         self.start_yaw = 0.0
 
-        for i in range(1, 8):
+        for i in range(1, 2):
             self.declare_parameter(f'gps_WP{i}', None)
             gps_wp_value = self.get_parameter(f'gps_WP{i}').value
             self.gps_WP.append(np.array(gps_wp_value))
@@ -230,6 +227,9 @@ class VehicleController(Node):
         self.vehicle_phase_publisher = self.create_publisher(
             VehiclePhase, '/vehicle_phase', qos_profile
         )
+        self.start_yaw_publisher = self.create_publisher(
+            Float32MultiArray, '/auto_land_home_info', 10
+        )
 
         """
         8. timer setup
@@ -238,7 +238,6 @@ class VehicleController(Node):
         self.offboard_heartbeat = self.create_timer(self.time_period, self.offboard_heartbeat_callback)
         self.vehicle_phase_publisher_timer = self.create_timer(self.time_period, self.vehicle_phase_publisher_callback)
         self.gimbal_control_callback_timer = self.create_timer(self.time_period, self.gimbal_control_callback)
-        self.log_timer = self.create_timer(self.time_period, self.log_timer_callback)
         self.main_timer = self.create_timer(self.time_period, self.main_timer_callback)
         
         print("Successfully executed: vehicle_controller")
@@ -256,7 +255,7 @@ class VehicleController(Node):
     def convert_global_to_local_waypoint(self, home_position_gps):
         self.home_position = self.pos   # set home position
         self.start_yaw = self.yaw     # set initial yaw
-        for i in range(1, 8):
+        for i in range(1, 2):
             # gps_WP = [lat, lon, rel_alt]
             wp_position = p3d.geodetic2ned(self.gps_WP[i][0], self.gps_WP[i][1], self.gps_WP[i][2] + home_position_gps[2],
                                             home_position_gps[0], home_position_gps[1], home_position_gps[2])
@@ -356,129 +355,21 @@ class VehicleController(Node):
             packet = bytearray(data_fix + data_var + data_crc)
             self.ser.write(packet)
 
-    # Logging
-    def log_timer_callback(self): # auto latitude longtitude altitude year month day hour min sec ms WPT
-        self.auto = int(self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION \
-                        or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD \
-                        or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LAND)
-        if self.phase in [0, 7, 8, 9] :
-            self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year:.5e}\t{self.utc_month:.5e}\t{self.utc_day:.5e}\t{self.utc_hour:.5e}\t{self.utc_min:.5e}\t{self.utc_sec:.5e}\t{self.utc_ms:.5e}\t{self.phase}")
-
 
     def main_timer_callback(self):       
         if self.phase == 0:
             if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
                 and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                self.print('\n\n<< final_02 >>\n\n')
+                self.print('\n\n<< final_03 >>\n\n')
                 self.print("Mission mode requested\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
                 self.phase = 1
-                self.subphase = 'takeoff'
+                self.subphase = 'heading to WP[1]'
 
-        elif self.phase in range(1, 7):
-            if np.linalg.norm(self.pos - self.WP[self.phase]) >= self.nearby_acceptance_radius: # far from WP
-                if len(self.log_dict['utc_time']) == 0:
-                    self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year:.5e}\t{self.utc_month:.5e}\t{self.utc_day:.5e}\t{self.utc_hour:.5e}\t{self.utc_min:.5e}\t{self.utc_sec:.5e}\t{self.utc_ms:.5e}\t{self.phase}")
-                else:
-                    # horziontal error: np.linalg.norm(x error, y error)
-                    # vertical error: z error
-                    self.print("--------------------------------------------")
-                    # find min_idx
-                    horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 2 )
-                    vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 4)
-                    min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
-
-                    if min_indices != [] : # (2,4) -> 20 points
-                        print(min_indices)
-                        if len(min_indices) == 1 :
-                            errors = [self.error[min_indices[0]]]
-                        else :
-                            errors = self.error[min_indices[0]:min_indices[-1]]
-                        min_idx = self.error.index(min(errors))
-                        
-                        
-                    else :
-                        horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 4)
-                        vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 8)
-                        min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
-                        if min_indices != [] :
-                            print(min_indices)
-                            if len(min_indices) == 1 :
-                                errors = [self.error[min_indices[0]]]
-                            else :
-                                errors = self.error[min_indices[0]:min_indices[-1]]
-                            min_idx = self.error.index(min(errors))
-                        else :
-                            horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 6)
-                            vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 12)
-                            min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
-                            if min_indices != [] :
-                                print(min_indices)
-                                if len(min_indices) == 1 :
-                                    errors = [self.error[min_indices[0]]]
-                                else :
-                                    errors = self.error[min_indices[0]:min_indices[-1]]
-                                min_idx = self.error.index(min(errors))
-                            else :
-                                min_idx = self.error.index(min(self.error))
-
-
-                    for i in range(len(self.log_dict['utc_time'])):
-                        vertical_error = self.vertical_error[min_idx]
-                        horizontal_error = self.horizontal_error[min_idx]
-                        if i < min_idx:
-                            phase = self.phase
-                        else:
-                            phase = self.phase + 1
-                        self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year:.5e}\t{self.utc_month:.5e}\t{self.utc_day:.5e}\t{self.utc_hour:.5e}\t{self.utc_min:.5e}\t{self.utc_sec:.5e}\t{self.utc_ms:.5e}\t{self.phase}")
-
-
-                    self.print("--------------------------------------------")
-                    self.print(f"vertical_error: {vertical_error}, horizontal_error: {horizontal_error}")
-                    self.print("--------------------------------------------")
-
-                    self.phase += 1
-                    self.subphase = f'heading to WP[{phase}]'
-
-                # initialize log info & error
-                self.log_dict = {
-                    'auto': [],
-                    'subphase': [],
-                    'utc_time': [],
-                    'pos[0]': [],
-                    'pos[1]': [],
-                    'pos[2]': [],
-                    'pos_gps[0]': [],
-                    'pos_gps[1]': [],
-                    'pos_gps[2]': []
-                }
-                self.vertical_error = [np.inf]
-                self.horizontal_error = [np.inf]
-                self.error = [np.inf]
-
-            elif np.linalg.norm(self.pos - self.WP[self.phase]) < self.nearby_acceptance_radius: # near WP
-                # log stops printing, log info still being collected in array 
-                self.subphase = f'collecting log info'
-
-                self.log_dict['auto'].append(self.auto)
-                self.log_dict['subphase'].append(self.subphase)
-                self.log_dict['utc_time'].append(self.utc_time)
-                self.log_dict['pos[0]'].append(self.pos[0])
-                self.log_dict['pos[1]'].append(self.pos[1])
-                self.log_dict['pos[2]'].append(self.pos[2])
-                self.log_dict['pos_gps[0]'].append(self.pos_gps[0])
-                self.log_dict['pos_gps[1]'].append(self.pos_gps[1])
-                self.log_dict['pos_gps[2]'].append(self.pos_gps[2]) # collecting log info
-
-                self.vertical_error.append(np.abs(self.pos[2] - self.WP[self.phase][2]))
-                self.horizontal_error.append(np.linalg.norm(np.array([self.pos[0], self.pos[1]]) - self.WP[self.phase][:2])) # collecting error info
-                self.error.append(np.sqrt((self.pos[2] - self.WP[self.phase][2])**2 + (np.linalg.norm(np.array([self.pos[0], self.pos[1]]) - self.WP[self.phase][:2]))**2))
-                
-
-        elif self.phase == 7:
-            if self.subphase == 'heading to WP[7]':
+        elif self.phase == 1:
+            if self.subphase == 'heading to WP[1]':
                 if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                    if np.linalg.norm(self.pos - self.WP[7]) < self.offboard_acceptance_radius:
+                    if np.linalg.norm(self.pos - self.WP[1]) < self.offboard_acceptance_radius:
                         self.publish_vehicle_command(
                             VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
                             param1=1.0, # main mode
@@ -491,13 +382,13 @@ class VehicleController(Node):
                     self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, np.linalg.norm(self.vel))
                     self.subphase = 'pause'
                     self.print("\nOffboard control mode activated")
-                    self.print('[subphase : heading to WP[7] -> pause]\n')
+                    self.print('[subphase : heading to WP[1] -> pause]\n')
 
             elif self.subphase == 'pause':
                 self.run_bezier_curve(self.bezier_points)
                 if np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
-                    self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[7], self.WP[8])
-                    self.goal_position = self.WP[7]
+                    self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[1], self.WP[2])
+                    self.goal_position = self.WP[1]
                     self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
                     self.subphase = 'align to vertiport'
                     self.print('\n[subphase : pause -> align to vertiport]\n')
@@ -505,20 +396,14 @@ class VehicleController(Node):
             elif self.subphase == 'align to vertiport':
                 self.run_bezier_curve(self.bezier_points, self.goal_yaw)           
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
-                    vertical_error = np.abs(self.pos[2] - self.WP[7][2])
-                    horizontal_error = np.linalg.norm(self.pos[:2] - self.WP[7][:2])
-                    self.print("--------------------------------------------")
-                    self.print(f"vertical_error: {vertical_error}, horizontal_error: {horizontal_error}")
-                    self.print("--------------------------------------------")
-
-                    self.goal_position = self.WP[8]
+                    self.goal_position = self.WP[2]
                     self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
-                    self.phase = 8
+                    self.phase = 2
                     self.subphase = 'go slow'
-                    self.print('\n[phase: 7 -> 8]')
+                    self.print('\n[phase: 1 -> 2]')
                     self.print('[subphase : align to vertiport -> go slow]\n')
 
-        elif self.phase == 8:
+        elif self.phase == 2:
             if self.subphase == 'go slow':
                 self.run_bezier_curve(self.bezier_points)
                 if self.obstacle:
@@ -533,21 +418,21 @@ class VehicleController(Node):
                         self.print('\n[subphase : go slow -> pause]\n')
 
                 # if reach the WP8 without confronting obstacle
-                if np.linalg.norm(self.pos - self.WP[8]) < self.mc_acceptance_radius:
+                if np.linalg.norm(self.pos - self.WP[2]) < self.mc_acceptance_radius:
                     self.goal_yaw = self.start_yaw
-                    self.goal_position = self.WP[9]
+                    self.goal_position = self.WP[3]
                     self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
-                    self.phase = 9
+                    self.phase = 3
                     self.subphase = 'landing align'
-                    self.print('\n[phase : 8 -> 9]')
+                    self.print('\n[phase : 2 -> 3]')
                     self.print('[subphase : go slow -> landing align]\n')
             
             elif self.subphase == 'pause':
                 self.run_bezier_curve(self.bezier_points)
                 if np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
-                    self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[7], self.WP[8])
-                    direction = (self.WP[8] - self.WP[7]) / np.linalg.norm(self.WP[8] - self.WP[7])
-                    self.goal_position = self.WP[7] + direction * np.dot(self.pos - self.WP[7], direction)
+                    self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[1], self.WP[2])
+                    direction = (self.WP[2] - self.WP[1]) / np.linalg.norm(self.WP[2] - self.WP[1])
+                    self.goal_position = self.WP[1] + direction * np.dot(self.pos - self.WP[1], direction)
                     self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
                     self.subphase = 'align'
                     self.print('\n[subphase : pause -> align]\n')
@@ -565,12 +450,12 @@ class VehicleController(Node):
                     obstacle_detect_ratio = self.ladder_count / self.yolo_time_count
                     if obstacle_detect_ratio >= 0.55:
                         self.print(f'Ladder-truck Orientation: {"right" if self.left_or_right > 0 else "left"}')
-                        self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[7], self.WP[8])
+                        self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[1], self.WP[2])
                         avoid_direction = np.array([np.cos(self.goal_yaw - np.sign(self.left_or_right) * np.pi/2), np.sin(self.goal_yaw - np.sign(self.left_or_right) * np.pi/2), 0.0])
                         self.yolo_WP[0] = self.pos
                         self.yolo_WP[1] = self.pos + self.corridor_radius * avoid_direction
-                        self.yolo_WP[2] = self.WP[8] + self.corridor_radius * avoid_direction
-                        self.yolo_WP[3] = self.WP[8]
+                        self.yolo_WP[2] = self.WP[2] + self.corridor_radius * avoid_direction
+                        self.yolo_WP[3] = self.WP[2]
                         self.ladder_count = 0
                         self.yolo_time_count = 0
                         self.left_or_right = 0
@@ -582,7 +467,7 @@ class VehicleController(Node):
                         self.ladder_count = 0
                         self.yolo_time_count = 0
                         self.left_or_right = 0
-                        self.goal_position = self.WP[8]
+                        self.goal_position = self.WP[2]
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
                         self.subphase = 'go slow'
                         self.print('\n[subphase : detecting obstacle -> go slow]\n')
@@ -604,11 +489,11 @@ class VehicleController(Node):
                     if self.yolo_wp_checker == 3:
                         self.yolo_wp_checker = 1
                         self.goal_yaw = self.start_yaw
-                        self.goal_position = self.WP[9]
+                        self.goal_position = self.WP[3]
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
-                        self.phase = 9
+                        self.phase = 3
                         self.subphase = 'landing align'
-                        self.print('\n[phase : 8 -> 9]')
+                        self.print('\n[phase : 2 -> 3]')
                         self.print('[subphase : avoiding obstacle -> landing align]\n')
                     else:
                         self.yolo_wp_checker += 1
@@ -628,7 +513,7 @@ class VehicleController(Node):
                             self.subphase = 'pause'
                             self.print('\n[subphase : avoiding obstacle -> pause]\n')
 
-        elif self.phase == 9:
+        elif self.phase == 3:
             if self.subphase == 'landing align':
                 self.gimbal_pitch = -90.0
                 self.run_bezier_curve(self.bezier_points, self.goal_yaw)
@@ -640,30 +525,13 @@ class VehicleController(Node):
                 self.gimbal_counter += 1
                 self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.goal_yaw)
                 if self.gimbal_counter >= self.gimbal_time / self.time_period:
-                    if self.apriltag:
-                        self.print("\nApriltag detected")
-                        self.print(f"goal position: {self.apriltag_position}\n")
-                        self.apriltag = False
-                        self.goal_position = self.apriltag_position
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.landing_vmax)
-                    else:
-                        self.print("\nApriltag not detected\n")
-                        self.goal_position = np.array([0.0, 0.0, -self.landing_command_height - self.landing_acceptance])
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.landing_vmax)
+                    home_info = Float32MultiArray()
+                    home_info.data = list(self.home_position) + [self.start_yaw]      # [N, E, D, yaw]
+                    self.start_yaw_publisher.publish(home_info)
                     self.subphase = 'auto landing'
                     self.print('\n[subphase : prepare landing -> auto landing]\n')
 
             elif self.subphase == 'auto landing':
-                self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                if np.linalg.norm(self.pos[:2] - self.goal_position[:2]) < self.mc_acceptance_radius \
-                    and (np.abs(self.pos[2]) < self.landing_command_height or np.abs(self.pos[2] - self.goal_position[2]) < self.landing_acceptance):
-                    self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
-                    self.subphase = 'landing'
-                    self.print(f"\nhorizontal_error: {np.linalg.norm(self.pos[:2] - self.goal_position[:2])}")
-                    self.print(f"height: {self.pos[2]}")
-                    self.print('[subphase : auto landing -> landing]\n')
-
-            elif self.subphase == 'landing':
                 if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_DISARMED:
                     horizontal_error = np.linalg.norm(self.pos[:2])
                     self.print("--------------------------------------------")
