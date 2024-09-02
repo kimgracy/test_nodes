@@ -50,7 +50,7 @@ class VehicleController(Node):
         """
         # given constants
         self.camera_to_center = 0.5                             # distance from camera to center of the vehicle
-        self.landing_height = 5.0                               # start auto landing at 5m
+        self.landing_height = 5.0                               # prepare auto landing at 5m
         self.corridor_radius = 2.0
 
         # acceptance constants
@@ -80,10 +80,11 @@ class VehicleController(Node):
         self.focus_time = 5.0                                   # 5 seconds
 
         # auto landing constants
-        self.gimbal_time = 10.0                                 # 10 seconds
+        self.gimbal_time = 15.0                                 # 15 seconds
         self.landing_vmax = 0.5
         self.landing_command_height = 0.5
-        self.landing_acceptance = 0.05
+        self.landing_acceptance = 0.1
+        self.auto_landing_height = 7.0                          # start auto landing at 7m
 
         """
         2. Logging setup
@@ -262,7 +263,7 @@ class VehicleController(Node):
             wp_position = np.array(wp_position)
             self.WP.append(wp_position)
         self.WP.append(np.array([0.0, 0.0, -self.landing_height]))  # landing position
-        self.WP.append(np.array([-self.camera_to_center * np.cos(self.start_yaw), -self.camera_to_center * np.sin(self.start_yaw), -self.landing_height]))  # set the camera's position to the home position
+        self.WP.append(np.array([-self.camera_to_center * np.cos(self.start_yaw), -self.camera_to_center * np.sin(self.start_yaw), -self.auto_landing_height]))  # set the camera's position to the home position
         self.print(f'home position: {self.home_position}')
         self.print(f'WP: {self.WP}\n')
 
@@ -325,13 +326,6 @@ class VehicleController(Node):
         yaw = np.arctan2(direction[1], direction[0])
         return yaw
     
-    def near_goal(self, goal_position, acceptance_radius, goal_yaw=None, acceptance_angle=None):
-        if goal_yaw is None:
-            return np.linalg.norm(self.pos - goal_position) < acceptance_radius
-        else:
-            return np.linalg.norm(self.pos - goal_position) < acceptance_radius \
-                    and np.abs((self.yaw - goal_yaw + np.pi) % (2 * np.pi) - np.pi) < acceptance_angle
-    
     def find_indices_below_threshold(self, arr, threshold):
         return [i for i, value in enumerate(arr) if value < threshold]
     
@@ -375,7 +369,7 @@ class VehicleController(Node):
         if self.phase == 0:
             if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
                 and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                self.print('\n\n<< final_01 >>\n\n')
+                self.print('\n\n<< final_02 >>\n\n')
                 self.print("Mission mode requested\n")
                 self.convert_global_to_local_waypoint(self.pos_gps)
                 self.phase = 1
@@ -415,8 +409,8 @@ class VehicleController(Node):
                                 errors = self.error[min_indices[0]:min_indices[-1]]
                             min_idx = self.error.index(min(errors))
                         else :
-                            horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 6 / 10)
-                            vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 12 / 10)
+                            horizontal_min_indices = self.find_indices_below_threshold(self.horizontal_error, 6)
+                            vertical_min_indices = self.find_indices_below_threshold(self.vertical_error, 12)
                             min_indices = self.intersection(horizontal_min_indices, vertical_min_indices)
                             if min_indices != [] :
                                 print(min_indices)
@@ -640,7 +634,7 @@ class VehicleController(Node):
                 self.run_bezier_curve(self.bezier_points, self.goal_yaw)
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.subphase = 'prepare landing'
-                    self.print('\n[subphase : align -> prepare landing]\n')
+                    self.print('\n[subphase : landing align -> prepare landing]\n')
 
             elif self.subphase == 'prepare landing':
                 self.gimbal_counter += 1
@@ -654,7 +648,7 @@ class VehicleController(Node):
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.landing_vmax)
                     else:
                         self.print("\nApriltag not detected\n")
-                        self.goal_position = np.array([0.0, 0.0, -self.landing_command_height])
+                        self.goal_position = np.array([0.0, 0.0, -self.landing_command_height - self.landing_acceptance])
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.landing_vmax)
                     self.subphase = 'auto landing'
                     self.print('\n[subphase : prepare landing -> auto landing]\n')

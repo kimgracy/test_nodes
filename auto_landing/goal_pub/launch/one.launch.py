@@ -12,7 +12,7 @@ def generate_launch_description():
     apriltag_params_file = PathJoinSubstitution([
         FindPackageShare('apriltag_ros'),
         'cfg',
-        'tags_36h11.yaml'
+        'tags_Standard41h12.yaml'
     ])
 
     return LaunchDescription(

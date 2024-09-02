@@ -15,7 +15,7 @@ from px4_msgs.msg import VehicleCommand
 from px4_msgs.msg import OffboardControlMode
 from px4_msgs.msg import TrajectorySetpoint
 from px4_msgs.msg import GimbalManagerSetManualControl
-from std_msgs.msg import Bool, Float32
+from std_msgs.msg import Bool, Float32, Float32MultiArray
 
 # import math, numpy
 import math
@@ -67,11 +67,12 @@ class VehicleController(Node):
         self.home_position = np.array([0.0, 0.0, 0.0])
         self.pos = np.array([0.0, 0.0, 0.0])
         self.yaw = float('nan')
+        self.start_yaw = 0.0
         
         self.previous_goal = None
         self.current_goal = None
 
-        self.ser = serial.Serial('/dev/ttyGimbal', 115200)
+        ##self.ser = serial.Serial('/dev/ttyGimbal', 115200)
         self.gimbal_pitchangle = 0
         self.gimbal_yawangle = math.pi/2
 
@@ -100,8 +101,8 @@ class VehicleController(Node):
         self.trajectory_setpoint_publisher = self.create_publisher(
             TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile
         )
-        self.autolanding_publisher = self.create_publisher(
-            Float32, 'auto_land_on_yaw', 10
+        self.start_yaw_publisher = self.create_publisher(
+            Float32MultiArray, '/auto_land_home_info', 10
         )
         self.gimbal_publisher = self.create_publisher(
             GimbalManagerSetManualControl, '/fmu/in/gimbal_manager_set_manual_control', qos_profile
@@ -164,9 +165,9 @@ class VehicleController(Node):
                 self.phase = 1
             self.phase = 1
         elif self.phase == 1:
-            self.auto_land_yaw = Float32()
-            self.auto_land_yaw.data = self.yaw_start
-            self.autolanding_publisher.publish(self.auto_land_yaw)
+            home_info = Float32MultiArray()
+            home_info.data = list(self.home_position) + [self.start_yaw]      # [N, E, D, yaw]
+            self.start_yaw_publisher.publish(home_info)
         print(self.phase)
     
             
@@ -187,8 +188,8 @@ class VehicleController(Node):
         data_fix = bytes([0x55, 0x66, 0x01, 0x04, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00])
         data_var = to_twos_complement(10 * int(self.gimbal_pitchangle * 180 / math.pi))
         data_crc = crc_xmodem(data_fix + data_var)
-        packet = bytearray(data_fix + data_var + data_crc)
-        self.ser.write(packet)
+        ##packet = bytearray(data_fix + data_var + data_crc)
+        ##self.ser.write(packet)
 
 
     """
