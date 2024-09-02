@@ -51,7 +51,12 @@ setup(
             'mode_test_00 = test_nodes.mode_test_00:main',
             'mission_test_01 = test_nodes.mission_test_01:main',
             'final_01 = test_nodes.final_01:main',
-            'final_02 = test_nodes.final_02:main'
+            'final_02 = test_nodes.final_02:main',
+            'final_03 = test_nodes.final_03_landing_1:main',
+            'final_04 = test_nodes.final_04_landing_2:main',
+            'final_05 = test_nodes.final_05_offboard:main',
+            'final_06 = test_nodes.final_06_offboard:main',
+            'final_07 = test_nodes.final_07:main'
         ],
     },
 )
