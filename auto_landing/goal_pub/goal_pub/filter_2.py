@@ -22,6 +22,7 @@ class Filter(Node):
         )
 
         self.phase = 0
+        self.first = 1
         self.alpha = 0.8
         self.hz_control = 10
         self.past_value = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.5])
@@ -37,6 +38,9 @@ class Filter(Node):
             self.raw_values.append(tag_world)
 
             if len(self.raw_values) == self.hz_control:
+                if self.first:
+                    self.past_value = np.mean(self.raw_values, axis=0)
+                    self.first = 0
                 average = np.mean(self.raw_values, axis=0) 
                 average = self.alpha * average + (1 - self.alpha) * self.past_value
                 self.past_value = average

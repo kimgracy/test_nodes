@@ -21,17 +21,17 @@ class Filter(Node):
             10
         )
 
-        self.phaze = 0
+        self.phase = 0
         self.hz_control = 10
         self.publisher = self.create_publisher(Float32MultiArray, 'bezier_waypoint', 10)
         self.raw_values = deque([], maxlen=self.hz_control)  # 최대 크기를 지정하여 자동으로 관리
         self.raw_values_2 = deque([], maxlen=30)
 
     def phase_check_callback(self):
-        self.phaze = 1
+        self.phase = 1
 
     def tag_callback(self, msg):
-        if self.phaze:
+        if self.phase:
             tag_world = np.array(msg.data)
             self.raw_values.append(tag_world)
 
