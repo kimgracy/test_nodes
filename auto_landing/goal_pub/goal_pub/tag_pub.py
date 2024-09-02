@@ -72,8 +72,10 @@ class TagPublisher(Node):
         self.tag_world_pub = self.create_publisher(Float32MultiArray, 'bezier_waypoint/raw', 10)
         self.last_tag = np.array([0,0,0])
         self.detect = False
-        
-        
+        self.roll = 0 
+        self.pitch = 0
+        self.yaw = 0
+    
     def tag_callback(self, msg):
         try:
             if self.detect == False:
@@ -114,7 +116,27 @@ class TagPublisher(Node):
             self.drone_world = np.array([msg.x, msg.y, msg.z]) # NED frame
         except:
             self.get_logger().info("Oh no,,, position")
-            
+
+    def get_rotation_matrix(self):
+        # Roll (x축) 회전 행렬
+        R_x = np.array([[1, 0, 0],
+                        [0, np.cos(self.roll), -np.sin(self.roll)],
+                        [0, np.sin(self.roll), np.cos(self.roll)]])
+        
+        # Pitch (y축) 회전 행렬
+        R_y = np.array([[np.cos(self.pitch), 0, np.sin(self.pitch)],
+                        [0, 1, 0],
+                        [-np.sin(self.pitch), 0, np.cos(self.pitch)]])
+        
+        # Yaw (z축) 회전 행렬
+        R_z = np.array([[np.cos(self.yaw), -np.sin(self.yaw), 0],
+                        [np.sin(self.yaw), np.cos(self.yaw), 0],
+                        [0, 0, 1]])
+
+        # 최종 회전 행렬 (Yaw * Pitch * Roll 순서로 곱함)
+        R = np.dot(R_z, np.dot(R_y, R_x))
+        
+        return R            
 
 def main(args=None):
     rclpy.init(args=args)

@@ -275,13 +275,10 @@ class BezierControl(Node):
         if self.delta_t_goal == 0:
             self.goal_position_bezier()
 
-            self.get_logger().info("goal_position bezier made")
-
     def land(self):
-        # self.get_logger().info("land")
+        self.get_logger().info("land")
         self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
         self.loop_on = 0    
-        
 
     def publish_vehicle_command(self, command, **kwargs):
         """Publish a vehicle command."""
