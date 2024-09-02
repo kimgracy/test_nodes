@@ -57,11 +57,12 @@ class VehicleController(Node):
         self.mc_acceptance_radius = 0.3
         self.nearby_acceptance_radius = 30
         self.offboard_acceptance_radius = 10.0                   # mission -> offboard acceptance radius
+        self.transition_acceptance_angle = 0.8                   
         self.heading_acceptance_angle = 0.1                      # 0.1 rad = 5.73 deg
 
         # bezier curve constants
         self.fast_vmax = 5.0
-        self.slow_vmax = 3.0
+        self.slow_vmax = 3.5
         self.very_slow_vmax = 0.2
         self.max_acceleration = 9.81 * np.tan(10 * np.pi / 180)  # 10 degree tilt angle
         self.mc_start_speed = 0.0001
@@ -75,7 +76,7 @@ class VehicleController(Node):
         # yolo constants
         self.image_size = np.array([1280, 720])
         self.critical_section = 0.1                             # check the middle 20% of the image in the horizontal direction
-        self.yolo_hz = 30                                       # theoretically 20Hz
+        self.yolo_hz = 10                                       # theoretically 20Hz
         self.quick_time = 1.0                                   # 1 seconds
         self.focus_time = 5.0                                   # 5 seconds
 
@@ -388,7 +389,7 @@ class VehicleController(Node):
             elif self.subphase == 'heading to WP[1]':
                 if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
                     self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                    if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
+                    if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.transition_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                         self.publish_vehicle_command(
                             VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
                             param1=1.0, # main mode

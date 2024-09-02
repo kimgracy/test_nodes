@@ -1,0 +1,11 @@
+Auto Latitude	Longtitude	 Altitude	  UTC Year	 UTC Month	  UTC Day	  UTC Hour	  UTC Min	  UTC Sec	   UTC ms  WPT
+
+
+<< final_03 >>
+
+
+Mission mode requested
+
+home position: [-0.38644734  0.30137682 -2.3433671 ]
+WP: [array([0., 0., 0.]), array([-14.28686239,  14.48973132,  -4.99996751]), array([ 0.,  0., -5.]), array([ 0.27026032, -0.42066538, -5.        ])]
+
