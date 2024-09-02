@@ -1,0 +1,50 @@
+Auto Latitude	Longtitude	 Altitude	  UTC Year	 UTC Month	  UTC Day	  UTC Hour	  UTC Min	  UTC Sec	   UTC ms  WPT
+
+
+<< final_04 >>
+
+
+Mission mode requested
+
+home position: [0.30280742 0.02181311 0.43655145]
+WP: [array([0., 0., 0.]), array([-5.77385968,  8.10917907, -4.99999223]), array([ 0.,  0., -5.]), array([ 0.37871753, -0.32645525, -5.        ])]
+
+
+Offboard control mode activated
+[subphase : heading to WP[1] -> pause]
+
+
+[subphase : pause -> align to vertiport]
+
+
+[phase: 1 -> 2]
+[subphase : align to vertiport -> go slow]
+
+
+[phase : 2 -> 3]
+[subphase : go slow -> landing align]
+
+
+[subphase : align -> prepare landing]
+
+
+Apriltag not detected
+
+
+[subphase : prepare landing -> auto landing]
+
+
+horizontal_error: 0.20161624379777834
+height: -0.5491314977407455
+[subphase : auto landing -> landing]
+
+--------------------------------------------
+horizontal_error: 0.1893081279332867
+--------------------------------------------
+
+[subphase : auto landing -> mission complete]
+
+
+Mission complete
+Congratulations!
+

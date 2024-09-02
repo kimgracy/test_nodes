@@ -55,7 +55,8 @@ setup(
             'final_03 = test_nodes.final_03_landing_1:main',
             'final_04 = test_nodes.final_04_landing_2:main',
             'final_05 = test_nodes.final_05_offboard:main',
-            'final_06 = test_nodes.final_06_offboard:main'
+            'final_06 = test_nodes.final_06_offboard:main',
+            'final_07 = test_nodes.final_07:main'
         ],
     },
 )
