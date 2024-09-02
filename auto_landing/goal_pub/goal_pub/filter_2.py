@@ -7,7 +7,7 @@ import numpy as np
 class Filter(Node):
 
     def __init__(self):
-        super().__init__('filter')
+        super().__init__('filter_2')
         self.subscription = self.create_subscription(
             Float32MultiArray,
             'bezier_waypoint/raw',
@@ -22,12 +22,14 @@ class Filter(Node):
         )
 
         self.phase = 0
+        self.first = 1
+        self.alpha = 0.8
         self.hz_control = 30
+        self.past_value = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.5])
         self.publisher = self.create_publisher(Float32MultiArray, 'bezier_waypoint', 10)
         self.raw_values = deque([], maxlen=self.hz_control)  # 최대 크기를 지정하여 자동으로 관리
-        self.raw_values_2 = deque([], maxlen=30)
 
-    def phase_check_callback(self):
+    def phase_check_callback(self, msg):
         self.phase = 1
 
     def tag_callback(self, msg):
@@ -36,14 +38,17 @@ class Filter(Node):
             self.raw_values.append(tag_world)
 
             if len(self.raw_values) == self.hz_control:
-                average = np.mean(self.raw_values, axis=0)
-                self.raw_values_2.append(average)
-                self.raw_values.clear()
-                if len(self.raw_values_2) > 0:
-                    average_2 = np.mean(self.raw_values_2, axis=0)
-                    avg_msg = Float32MultiArray()
-                    avg_msg.data = average_2.tolist()
-                    self.publisher.publish(avg_msg)
+                if self.first:
+                    self.past_value = np.mean(self.raw_values, axis=0)
+                    self.first = 0
+                average = np.mean(self.raw_values, axis=0) 
+                average = self.alpha * average + (1 - self.alpha) * self.past_value
+                self.past_value = average
+
+                avg_msg = Float32MultiArray()
+                avg_msg.data = average.tolist()
+                self.publisher.publish(avg_msg)
+
 
         
         
