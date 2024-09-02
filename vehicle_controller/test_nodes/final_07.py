@@ -53,15 +53,16 @@ class VehicleController(Node):
         self.landing_height = 5.0                               # prepare auto landing at 5m
         self.corridor_radius = 2.0
 
-        # acceptance constants (rescaled)
+        # acceptance constants
         self.mc_acceptance_radius = 0.3
-        self.nearby_acceptance_radius = 30 / 6
-        self.offboard_acceptance_radius = 5.0                   # mission -> offboard acceptance radius
+        self.nearby_acceptance_radius = 30
+        self.offboard_acceptance_radius = 10.0                   # mission -> offboard acceptance radius
+        self.transition_acceptance_angle = 0.8                   
         self.heading_acceptance_angle = 0.1                      # 0.1 rad = 5.73 deg
 
         # bezier curve constants
         self.fast_vmax = 5.0
-        self.slow_vmax = 3.0
+        self.slow_vmax = 3.5
         self.very_slow_vmax = 0.2
         self.max_acceleration = 9.81 * np.tan(10 * np.pi / 180)  # 10 degree tilt angle
         self.mc_start_speed = 0.0001
@@ -81,9 +82,6 @@ class VehicleController(Node):
 
         # auto landing constants
         self.gimbal_time = 15.0                                 # 15 seconds
-        self.landing_vmax = 0.5
-        self.landing_command_height = 0.5
-        self.landing_acceptance = 0.1
         self.auto_landing_height = 10.0                          # start auto landing at 7m
 
         """
@@ -116,9 +114,9 @@ class VehicleController(Node):
         self.WP = [np.array([0.0, 0.0, 0.0])]
         self.gps_WP = [np.array([0.0, 0.0, 0.0])]
         self.home_position = np.array([0.0, 0.0, 0.0])
-        self.start_yaw = 0.0
+        self.start_yaw = 30.0
 
-        for i in range(1, 2):
+        for i in range(1, 8):
             self.declare_parameter(f'gps_WP{i}', None)
             gps_wp_value = self.get_parameter(f'gps_WP{i}').value
             self.gps_WP.append(np.array(gps_wp_value))
@@ -138,7 +136,7 @@ class VehicleController(Node):
         # pause -> align to vertiport -> go slow -> pause -> align -> detecting obstacle -> avoiding obstacle -> landing align -> auto landing (obstacle detected and avoided)
         # pause -> align to vertiport -> go slow -> pause -> align -> detecting obstacle -> avoiding obstacle -> pause -> ... (obstacle detected and avoided but detected again)
         # pause -> align to vertiport -> go slow -> pause -> align -> detecting obstacle -> go slow -> ... (thought obstacle was detected but it was not)
-        self.subphase = 'before flight'
+        self.subphase = 'landing align'
 
         """
         5. State variables
@@ -179,10 +177,6 @@ class VehicleController(Node):
         if is_jetson():
             self.ser = serial.Serial('/dev/ttyGimbal', 115200)
 
-        # auto landing
-        self.apriltag = False
-        self.apriltag_position = np.array([0.0, 0.0, 0.0])
-
         # UTC time
         self.utc_time = 0.0
         self.utc_year = 0
@@ -211,9 +205,6 @@ class VehicleController(Node):
         self.gps_subscriber = self.create_subscription(
             SensorGps, '/fmu/out/vehicle_gps_position', self.vehicle_gps_callback, qos_profile
         )
-        self.apriltag_subscriber = self.create_subscription(
-            Float32MultiArray, '/bezier_waypoint', self.apriltag_callback, 10
-        )
 
         """
         7. Create Publishers
@@ -229,6 +220,9 @@ class VehicleController(Node):
         )
         self.vehicle_phase_publisher = self.create_publisher(
             VehiclePhase, '/vehicle_phase', qos_profile
+        )
+        self.start_yaw_publisher = self.create_publisher(
+            Float32MultiArray, '/auto_land_home_info', 10
         )
 
         """
@@ -251,20 +245,6 @@ class VehicleController(Node):
     def print(self, *args, **kwargs):
         print(*args, **kwargs)
         self.logger.info(*args, **kwargs)
-    
-    def convert_global_to_local_waypoint(self, home_position_gps):
-        self.home_position = self.pos   # set home position
-        self.start_yaw = self.yaw     # set initial yaw
-        for i in range(1, 2):
-            # gps_WP = [lat, lon, rel_alt]
-            wp_position = p3d.geodetic2ned(self.gps_WP[i][0], self.gps_WP[i][1], self.gps_WP[i][2] + home_position_gps[2],
-                                            home_position_gps[0], home_position_gps[1], home_position_gps[2])
-            wp_position = np.array(wp_position)
-            self.WP.append(wp_position)
-        self.WP.append(np.array([0.0, 0.0, -self.landing_height]))  # landing position
-        self.WP.append(np.array([-self.camera_to_center * np.cos(self.start_yaw), -self.camera_to_center * np.sin(self.start_yaw), -self.auto_landing_height]))  # set the camera's position to the home position
-        self.print(f'home position: {self.home_position}')
-        self.print(f'WP: {self.WP}\n')
 
     def generate_bezier_curve(self, xi, xf, vmax):
         # reset counter
@@ -355,200 +335,33 @@ class VehicleController(Node):
             packet = bytearray(data_fix + data_var + data_crc)
             self.ser.write(packet)
 
+    
 
-    def main_timer_callback(self):       
-        if self.phase == 0:
-            if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED     \
-                and self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                self.print('\n\n<< final_04 >>\n\n')
-                self.print("Mission mode requested\n")
-                self.convert_global_to_local_waypoint(self.pos_gps)
-                self.phase = 1
-                self.subphase = 'heading to WP[1]'
-
-        elif self.phase == 1:
-            if self.subphase == 'heading to WP[1]':
-                if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION:
-                    if np.linalg.norm(self.pos - self.WP[1]) < self.offboard_acceptance_radius:
-                        self.publish_vehicle_command(
-                            VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 
-                            param1=1.0, # main mode
-                            param2=6.0  # offboard mode
-                        )
-                
-                elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-                    self.gimbal_pitch = -15.0
-                    self.goal_position = self.get_braking_position(self.pos, self.vel)
-                    self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, np.linalg.norm(self.vel))
-                    self.subphase = 'pause'
-                    self.print("\nOffboard control mode activated")
-                    self.print('[subphase : heading to WP[1] -> pause]\n')
-
-            elif self.subphase == 'pause':
-                self.run_bezier_curve(self.bezier_points)
-                if np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
-                    self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[1], self.WP[2])
-                    self.goal_position = self.WP[1]
-                    self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
-                    self.subphase = 'align to vertiport'
-                    self.print('\n[subphase : pause -> align to vertiport]\n')
-            
-            elif self.subphase == 'align to vertiport':
-                self.run_bezier_curve(self.bezier_points, self.goal_yaw)           
-                if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
-                    self.goal_position = self.WP[2]
-                    self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
-                    self.phase = 2
-                    self.subphase = 'go slow'
-                    self.print('\n[phase: 1 -> 2]')
-                    self.print('[subphase : align to vertiport -> go slow]\n')
-
-        elif self.phase == 2:
-            if self.subphase == 'go slow':
-                self.run_bezier_curve(self.bezier_points)
-                if self.obstacle:
-                    self.obstacle = False
-                    self.ladder_count += 1
-                    self.print(f'Detected obstacle : {self.ladder_count} times')
-                    if self.ladder_count >= self.yolo_hz * self.quick_time:
-                        self.ladder_count = 0
-                        self.goal_position = self.get_braking_position(self.pos, self.vel)
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, np.linalg.norm(self.vel))
-                        self.subphase = 'pause'
-                        self.print('\n[subphase : go slow -> pause]\n')
-
-                # if reach the WP8 without confronting obstacle
-                if np.linalg.norm(self.pos - self.WP[2]) < self.mc_acceptance_radius:
-                    self.goal_yaw = self.start_yaw
-                    self.goal_position = self.WP[3]
-                    self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
-                    self.phase = 3
-                    self.subphase = 'landing align'
-                    self.print('\n[phase : 2 -> 3]')
-                    self.print('[subphase : go slow -> landing align]\n')
-            
-            elif self.subphase == 'pause':
-                self.run_bezier_curve(self.bezier_points)
-                if np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
-                    self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[1], self.WP[2])
-                    direction = (self.WP[2] - self.WP[1]) / np.linalg.norm(self.WP[2] - self.WP[1])
-                    self.goal_position = self.WP[1] + direction * np.dot(self.pos - self.WP[1], direction)
-                    self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
-                    self.subphase = 'align'
-                    self.print('\n[subphase : pause -> align]\n')
-            
-            elif self.subphase == 'align':
-                self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
-                    self.ladder_count = 0
-                    self.subphase = 'detecting obstacle'
-                    self.print('\n[subphase : align -> detecting obstacle]\n')
-            
-            elif self.subphase == 'detecting obstacle':
-                self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.goal_yaw)
-                if self.yolo_time_count >= self.yolo_hz * self.focus_time:
-                    obstacle_detect_ratio = self.ladder_count / self.yolo_time_count
-                    if obstacle_detect_ratio >= 0.55:
-                        self.print(f'Ladder-truck Orientation: {"right" if self.left_or_right > 0 else "left"}')
-                        self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[1], self.WP[2])
-                        avoid_direction = np.array([np.cos(self.goal_yaw - np.sign(self.left_or_right) * np.pi/2), np.sin(self.goal_yaw - np.sign(self.left_or_right) * np.pi/2), 0.0])
-                        self.yolo_WP[0] = self.pos
-                        self.yolo_WP[1] = self.pos + self.corridor_radius * avoid_direction
-                        self.yolo_WP[2] = self.WP[2] + self.corridor_radius * avoid_direction
-                        self.yolo_WP[3] = self.WP[2]
-                        self.ladder_count = 0
-                        self.yolo_time_count = 0
-                        self.left_or_right = 0
-                        self.goal_position = self.yolo_WP[self.yolo_wp_checker]
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.very_slow_vmax)  # very slow (not to go out of the corridor)
-                        self.subphase = 'avoiding obstacle'
-                        self.print('\n[subphase : detecting obstacle -> avoiding obstacle]\n')
-                    else:
-                        self.ladder_count = 0
-                        self.yolo_time_count = 0
-                        self.left_or_right = 0
-                        self.goal_position = self.WP[2]
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
-                        self.subphase = 'go slow'
-                        self.print('\n[subphase : detecting obstacle -> go slow]\n')
-
-                else:
-                    self.yolo_time_count += 1
-                    if self.obstacle:
-                        self.obstacle = False
-                        self.ladder_count += 1
-                        self.left_or_right += 1 if self.obstacle_x > (self.image_size[0] / 2) else -1
-                        self.print(f'Detected obstacle : {self.ladder_count} times, ({self.obstacle_x}, {self.obstacle_y})')
-                    else:
-                        pass
-
-            elif self.subphase == 'avoiding obstacle':
-                # go along with ractangle path. but if you find obstacle being in front of you  =>  'pause'.
-                if np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
-                    self.print(f"\nyolo wp{self.yolo_wp_checker} reached\n")
-                    if self.yolo_wp_checker == 3:
-                        self.yolo_wp_checker = 1
-                        self.goal_yaw = self.start_yaw
-                        self.goal_position = self.WP[3]
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
-                        self.phase = 3
-                        self.subphase = 'landing align'
-                        self.print('\n[phase : 2 -> 3]')
-                        self.print('[subphase : avoiding obstacle -> landing align]\n')
-                    else:
-                        self.yolo_wp_checker += 1
-                        self.goal_position = self.yolo_WP[self.yolo_wp_checker]
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.fast_vmax)
-                else:
-                    self.run_bezier_curve(self.bezier_points)
-                    if self.obstacle and self.yolo_wp_checker == 2 and np.abs(self.obstacle_x - self.image_size[0] / 2) < self.critical_section * self.image_size[0]:
-                        self.obstacle = False
-                        self.ladder_count += 1
-                        self.print(f'Detected obstacle in critical section: {self.ladder_count} times')
-                        if self.ladder_count >= self.yolo_hz * self.quick_time:
-                            self.ladder_count = 0
-                            self.yolo_wp_checker = 1
-                            self.goal_position = self.get_braking_position(self.pos, self.vel)
-                            self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, np.linalg.norm(self.vel))
-                            self.subphase = 'pause'
-                            self.print('\n[subphase : avoiding obstacle -> pause]\n')
-
-        elif self.phase == 3:
+    def main_timer_callback(self):
+        if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
             if self.subphase == 'landing align':
+                self.goal_yaw = np.pi / 6
+                self.goal_position = self.pos
+                self.goal_position[2] = -self.auto_landing_height
+                self.start_yaw = np.pi / 6
+                self.home_position = np.array([0.0, 0.0, 0.0])
                 self.gimbal_pitch = -90.0
-                self.run_bezier_curve(self.bezier_points, self.goal_yaw)
+                self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.yaw + np.sign(np.sin(self.goal_yaw - self.yaw)) * self.yaw_speed)
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.subphase = 'prepare landing'
-                    self.print('\n[subphase : align -> prepare landing]\n')
+                    self.print('\n[subphase : landing align -> prepare landing]\n')
 
             elif self.subphase == 'prepare landing':
                 self.gimbal_counter += 1
                 self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.goal_yaw)
                 if self.gimbal_counter >= self.gimbal_time / self.time_period:
-                    if self.apriltag:
-                        self.print("\nApriltag detected")
-                        self.print(f"goal position: {self.apriltag_position}\n")
-                        self.apriltag = False
-                        self.goal_position = self.apriltag_position
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.landing_vmax)
-                    else:
-                        self.print("\nApriltag not detected\n")
-                        self.goal_position = np.array([0.0, 0.0, -self.landing_command_height])
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.landing_vmax)
+                    home_info = Float32MultiArray()
+                    home_info.data = list(self.home_position) + [self.start_yaw]
+                    self.start_yaw_publisher.publish(home_info)
                     self.subphase = 'auto landing'
                     self.print('\n[subphase : prepare landing -> auto landing]\n')
 
             elif self.subphase == 'auto landing':
-                self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                if np.linalg.norm(self.pos[:2] - self.goal_position[:2]) < self.mc_acceptance_radius \
-                    and (np.abs(self.pos[2]) < self.landing_command_height or np.abs(self.pos[2] - self.goal_position[2]) < self.landing_acceptance):
-                    self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
-                    self.subphase = 'landing'
-                    self.print(f"\nhorizontal_error: {np.linalg.norm(self.pos[:2] - self.goal_position[:2])}")
-                    self.print(f"height: {self.pos[2]}")
-                    self.print('[subphase : auto landing -> landing]\n')
-
-            elif self.subphase == 'landing':
                 if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_DISARMED:
                     horizontal_error = np.linalg.norm(self.pos[:2])
                     self.print("--------------------------------------------")
@@ -562,7 +375,8 @@ class VehicleController(Node):
                 self.print("Congratulations!\n")
                 self.destroy_node()
                 rclpy.shutdown()
-            
+
+
 
     """
     Callback functions for subscribers.
@@ -599,10 +413,6 @@ class VehicleController(Node):
         self.obstacle = True
         self.obstacle_x = int(msg.x)
         self.obstacle_y = int(msg.y)
-
-    def apriltag_callback(self, msg):
-        self.apriltag = True
-        self.apriltag_position = np.array(msg.data[0:3]) + np.array([np.cos(self.start_yaw), np.sin(self.start_yaw), 0.0]) * self.camera_to_center - self.home_position
 
     """
     Functions for publishing topics.

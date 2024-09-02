@@ -82,7 +82,7 @@ class VehicleController(Node):
 
         # auto landing constants
         self.gimbal_time = 15.0                                 # 15 seconds
-        self.auto_landing_height = 7.0                          # start auto landing at 7m
+        self.auto_landing_height = 10.0                          # start auto landing at 7m
 
         """
         2. Logging setup
