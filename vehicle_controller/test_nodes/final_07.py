@@ -82,7 +82,7 @@ class VehicleController(Node):
 
         # auto landing constants
         self.gimbal_time = 15.0                                 # 15 seconds
-        self.auto_landing_height = 7.0                          # start auto landing at 7m
+        self.auto_landing_height = 10.0                          # start auto landing at 7m
 
         """
         2. Logging setup
@@ -340,17 +340,13 @@ class VehicleController(Node):
     def main_timer_callback(self):
         if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
             if self.subphase == 'landing align':
-                self.print("Offboard mode requested\n")
-
-                self.goal_position = self.get_braking_position(self.pos, self.vel)
-                self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, np.linalg.norm(self.vel))
-                self.goal_yaw = 30.0
-                self.start_yaw = 30.0
+                self.goal_yaw = np.pi / 6
+                self.goal_position = self.pos
+                self.goal_position[2] = -self.auto_landing_height
+                self.start_yaw = np.pi / 6
                 self.home_position = np.array([0.0, 0.0, 0.0])
-
-            if self.subphase == 'landing align':
                 self.gimbal_pitch = -90.0
-                self.run_bezier_curve(self.bezier_points, self.goal_yaw)
+                self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.yaw + np.sign(np.sin(self.goal_yaw - self.yaw)) * self.yaw_speed)
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.subphase = 'prepare landing'
                     self.print('\n[subphase : landing align -> prepare landing]\n')

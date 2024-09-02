@@ -84,7 +84,7 @@ class VehicleController(Node):
         self.landing_vmax = 0.5
         self.landing_command_height = 0.5
         self.landing_acceptance = 0.1
-        self.auto_landing_height = 7.0                          # start auto landing at 7m
+        self.auto_landing_height = 10.0                          # start auto landing at 7m
 
         """
         2. Logging setup
