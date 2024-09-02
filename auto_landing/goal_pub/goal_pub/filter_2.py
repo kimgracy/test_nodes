@@ -24,7 +24,7 @@ class Filter(Node):
         self.phase = 0
         self.first = 1
         self.alpha = 0.8
-        self.hz_control = 10
+        self.hz_control = 30
         self.past_value = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.5])
         self.publisher = self.create_publisher(Float32MultiArray, 'bezier_waypoint', 10)
         self.raw_values = deque([], maxlen=self.hz_control)  # 최대 크기를 지정하여 자동으로 관리

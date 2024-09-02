@@ -275,7 +275,6 @@ class BezierControl(Node):
         if self.delta_t_goal == 0:
             self.goal_position_bezier()
 
-            self.get_logger().info("goal_position bezier made")
 
     def land(self):
         self.get_logger().info("land")
