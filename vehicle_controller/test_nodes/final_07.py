@@ -24,6 +24,7 @@ from my_bboxes_msg.msg import YoloObstacle
 
 # import other libraries
 import os
+import time
 import serial
 import logging
 import numpy as np
@@ -76,12 +77,12 @@ class VehicleController(Node):
         # yolo constants
         self.image_size = np.array([1280, 720])
         self.critical_section = 0.1                             # check the middle 20% of the image in the horizontal direction
-        self.yolo_hz = 10                                       # theoretically 20Hz
+        self.yolo_hz = 10                                       # theoretically 30Hz, but 10Hz in practice
         self.quick_time = 1.0                                   # 1 seconds
         self.focus_time = 5.0                                   # 5 seconds
 
         # auto landing constants
-        self.gimbal_time = 15.0                                 # 15 seconds
+        self.gimbal_time = 10.0                                 # 15 seconds
         self.auto_landing_height = 10.0                          # start auto landing at 7m
 
         """
@@ -224,6 +225,9 @@ class VehicleController(Node):
         self.start_yaw_publisher = self.create_publisher(
             Float32MultiArray, '/auto_land_home_info', 10
         )
+        self.gimbal_angle_publisher = self.create_publisher(
+            Float32MultiArray, '/gimbal_angle', 10
+        )
 
         """
         8. timer setup
@@ -311,6 +315,12 @@ class VehicleController(Node):
     def intersection(self, arr1, arr2):
         return [x for x in arr1 if x in arr2]
     
+    def gimbal_reboot(self):
+        if is_jetson():
+            data_fix = bytes([0x55, 0x66, 0x01, 0x02, 0x00, 0x00, 0x00, 0x80, 0x00, 0x01])
+            data_crc = crc_xmodem(data_fix)
+            packet = bytearray(data_fix + data_crc)
+            self.ser.write(packet)
 
     """
     Callback functions for the timers
@@ -334,8 +344,59 @@ class VehicleController(Node):
             data_crc = crc_xmodem(data_fix + data_var)
             packet = bytearray(data_fix + data_var + data_crc)
             self.ser.write(packet)
+            self.read_packet()
 
-    
+    def read_packet(self):
+        st = time.time()
+        global received_packet
+
+        # Check if there is any data available to read
+        while self.ser.in_waiting > 0:
+            # Read one byte at a time
+            data = self.ser.read(1)
+            
+            if data:
+                # Append the received byte to the packet
+                received_packet.extend(data)
+
+                # Check if the packet starts with 0x55, 0x66 and is 16 bytes long
+                if len(received_packet) >= 16 and received_packet[0] == 0x55 and received_packet[1] == 0x66:
+                    # We have a complete packet of 16 bytes
+                    complete_packet = received_packet[:16]  # Extract the complete packet
+
+                    # Calculate the CRC for the first 14 bytes
+                    calculated_crc = crc_xmodem(complete_packet[:14])
+
+                    # Extract the received CRC from the 15th and 16th bytes
+                    received_crc = complete_packet[14:16]
+
+                    # Compare calculated CRC with received CRC
+                    if calculated_crc == received_crc:
+                        # Extract and read values from 9~10, 11~12, 13~14 bytes as int16_t in little-endian
+                        value1 = int.from_bytes(complete_packet[8:10],  'little', signed=True)/10
+                        value2 = int.from_bytes(complete_packet[10:12], 'little', signed=True)/10
+                        value3 = int.from_bytes(complete_packet[12:14], 'little', signed=True)/10
+                        
+                        # Publish the gimbal angle
+                        gimbal_angle = Float32MultiArray()
+                        gimbal_angle.data = [value1, value2, value3]
+                        self.gimbal_angle_publisher.publish(gimbal_angle)
+
+                        print(time.time() - st)
+                        # Clear the received_packet buffer
+                        received_packet = received_packet[16:]  # Remove the processed packet
+                        break
+
+                    else:
+                        print(f"CRC Check Failed: Calculated {format_bytearray(calculated_crc)}, Received {format_bytearray(received_crc)}")
+                        break
+                    
+                elif len(received_packet) > 16:
+                    # If the buffer grows beyond 16 bytes without matching conditions, reset it
+                    print("Incomplete or malformed packet, clearing buffer.")
+                    received_packet.clear()
+                    break
+
 
     def main_timer_callback(self):
         if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
@@ -345,9 +406,10 @@ class VehicleController(Node):
                 self.goal_position[2] = -self.auto_landing_height
                 self.start_yaw = np.pi / 6
                 self.home_position = np.array([0.0, 0.0, 0.0])
-                self.gimbal_pitch = -90.0
                 self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.yaw + np.sign(np.sin(self.goal_yaw - self.yaw)) * self.yaw_speed)
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
+                    self.gimbal_reboot()    # gimbal reboot for safety
+                    self.gimbal_pitch = -90.0
                     self.subphase = 'prepare landing'
                     self.print('\n[subphase : landing align -> prepare landing]\n')
 
