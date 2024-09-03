@@ -30,6 +30,7 @@ import logging
 import numpy as np
 import pymap3d as p3d
 from datetime import datetime, timedelta
+import cv2
 
 class VehicleController(Node):
 
@@ -244,6 +245,7 @@ class VehicleController(Node):
         self.vehicle_phase_publisher_timer = self.create_timer(self.time_period, self.vehicle_phase_publisher_callback)
         self.gimbal_control_callback_timer = self.create_timer(self.time_period, self.gimbal_control_callback)
         self.main_timer = self.create_timer(self.time_period, self.main_timer_callback)
+        self.show_to_monitor_timer = self.create_timer(0.1, self.show_to_monitor_callback)
         
         print("Successfully executed: vehicle_controller")
         print("Start the mission\n")
@@ -419,6 +421,19 @@ class VehicleController(Node):
                     self.received_packet.clear()
                     break
 
+    def show_to_monitor_callback(self):
+        image = np.zeros((180,800,3),np.uint8)
+        cv2.putText(image, f'Pos: [{round(self.pos[0],2)},{round(self.pos[1],2)},{round(self.pos[2],2)}]', (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(image, f'Vel: [{round(self.vel[0],2)},{round(self.vel[1],2)},{round(self.vel[2],2)}]. {round(np.linalg.norm(self.vel))}', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(image, f'state: {self.vehicle_status.nav_state}', (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        if (self.phase == 8) and (self.subphase == 'avoiding obstacle'):
+            if self.left_or_right > 0:
+                cv2.putText(image, f'Obstacle direction: right', (10, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+            else:
+                cv2.putText(image, f'Obstacle direction: left', (10, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.imshow('Vehicle Information', image)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            cv2.destroyAllWindows()
 
     def main_timer_callback(self):       
         if self.phase == 0:
