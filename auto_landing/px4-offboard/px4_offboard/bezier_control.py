@@ -121,18 +121,17 @@ class points():
                                                -3 * self.point1[2] * (1 - count* self.timecount)**2)
         return bezvz
     def time_calibrate(self):
-        t_calculated= np.linalg.norm(self.xf - self.xi)/self.vmax
         t = np.linalg.norm(self.xf - self.xi)/self.vmax
         flag = 0
         a_max = 0
         while flag == 0:
             point1 = self.xi
-            point4 = self.xf
+            point2 = (self.xi + self.xf * 2)/3
             point3 = self.xf - self.vf*t/3
-            point2 = self.xi + (self.vi + 0.05 * self.vi / np.linalg.norm(self.vi))*t/3  
-            point2[2] = (2 * self.xi[2] + self.xf[2])/3
+            point4 = self.xf
+            # point2 = self.xi + (self.vi + 0.05 * self.vi / np.linalg.norm(self.vi))*t/3  
             flag = 1
-        calibrated = ([t,point1,point2,point3,point4])#t_calibrated
+        calibrated = ([t,point1,point2,point3,point4])
         return calibrated
 
 
@@ -317,7 +316,7 @@ class BezierControl(Node):
             if self.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
                 trajectory_msg = TrajectorySetpoint()
                 trajectory_msg.timestamp = int(Clock().now().nanoseconds / 1000)
-                if self.delta_t == -1 or self.delta_t > 300:
+                if self.delta_t == -1 or self.delta_t + int(1/self.timer_period) >= self.count-1 :
                     trajectory_msg.position[0] = self.x_goal[self.delta_t_goal + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[1] = self.y_goal[self.delta_t_goal + int(1/self.timer_period)]#np.nan
                     trajectory_msg.position[2] = self.z_goal[self.delta_t_goal + int(1/self.timer_period)]#np.nan
@@ -327,8 +326,8 @@ class BezierControl(Node):
                     trajectory_msg.yaw = self.yaw_start
                     self.delta_t_goal += 1
                     self.publisher_trajectory.publish(trajectory_msg)
-                    #self.get_logger().info(f"goal_position: {self.delta_t}, {self.delta_t_goal}")
-                    if self.delta_t_goal + int(1/self.timer_period) == self.count_goal-1:
+                    self.get_logger().info(f"goal_position: {self.delta_t}, {self.delta_t_goal}")
+                    if self.delta_t_goal + int(1/self.timer_period) >= self.count_goal-1:
                         self.delta_t_goal = 0
                     if np.linalg.norm(self.vehicle_position[2]-self.xf_goal[2]) < 0.5:
                         self.land()
@@ -345,7 +344,7 @@ class BezierControl(Node):
                     self.delta_t += 1
                     self.delta_t_goal = 0
                     self.publisher_trajectory.publish(trajectory_msg)
-                    #self.get_logger().info(f"bezier_position: {self.xf}")
+                    self.get_logger().info(f"bezier_position: {self.xf}")
                 
                 elif np.linalg.norm(self.vehicle_position[2]-self.xf[2]) < 0.1:
                     self.land()
