@@ -3,10 +3,9 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 
 from sensor_msgs.msg import Image
-from std_msgs.msg import String, Float32MultiArray
+from std_msgs.msg import String
 from tf2_msgs.msg import TFMessage as TfMsg
 from my_bboxes_msg.msg import YoloObstacle, VehiclePhase
-from px4_msgs.msg import VehicleLocalPosition
 
 import os
 import sys
@@ -43,11 +42,6 @@ class YoloDetector(Node):
         # Variables for vehicle status
         self.phase = '8'
         self.subphase = 'yolo_only'
-        self.flight_mode = []
-        self.pos = []
-        self.vel = []
-        self.left_or_right = ''
-        self.goal = []
         # Variables for YOLOv5
         self.y_threshold = 80
         self.frame_size = (1280, 720)
