@@ -350,12 +350,18 @@ class VehicleController(Node):
             self.ser.write(packet)
 
     # Logging
+    # auto_states = {3, 4, 5, 14, 17, 18, 19, 20}
     def log_timer_callback(self): # auto latitude longtitude altitude year month day hour min sec ms WPT
         self.auto = int(self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_MISSION \
+                        or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LOITER \
+                        or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_RTL \
                         or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD \
-                        or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LAND)
+                        or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_TAKEOFF \
+                        or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_LAND \
+                        or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_FOLLOW_TARGET \
+                        or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_PRECLAND)
         if self.phase in [0, 1, 7, 8, 9] :
-            self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year:.5e}\t{self.utc_month:.5e}\t{self.utc_day:.5e}\t{self.utc_hour:.5e}\t{self.utc_min:.5e}\t{self.utc_sec:.5e}\t{self.utc_ms:.5e}\t{self.phase}")
+            self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year}\t{self.utc_month}\t{self.utc_day}\t{self.utc_hour}\t{self.utc_min}\t{self.utc_sec}\t{self.utc_ms}\t{self.phase}")
 
 
     def main_timer_callback(self):       
@@ -405,7 +411,7 @@ class VehicleController(Node):
         elif self.phase in range(2, 7):
             if np.linalg.norm(self.pos - self.WP[self.phase]) >= self.nearby_acceptance_radius: # far from WP
                 if len(self.log_dict['utc_time']) == 0:
-                    self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year:.5e}\t{self.utc_month:.5e}\t{self.utc_day:.5e}\t{self.utc_hour:.5e}\t{self.utc_min:.5e}\t{self.utc_sec:.5e}\t{self.utc_ms:.5e}\t{self.phase}")
+                    self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year}\t{self.utc_month}\t{self.utc_day}\t{self.utc_hour}\t{self.utc_min}\t{self.utc_sec}\t{self.utc_ms}\t{self.phase}")
                 else:
                     # horziontal error: np.linalg.norm(x error, y error)
                     # vertical error: z error
@@ -457,7 +463,7 @@ class VehicleController(Node):
                             phase = self.phase
                         else:
                             phase = self.phase + 1
-                        self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year:.5e}\t{self.utc_month:.5e}\t{self.utc_day:.5e}\t{self.utc_hour:.5e}\t{self.utc_min:.5e}\t{self.utc_sec:.5e}\t{self.utc_ms:.5e}\t{self.phase}")
+                        self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year}\t{self.utc_month}\t{self.utc_day}\t{self.utc_hour}\t{self.utc_min}\t{self.utc_sec}\t{self.utc_ms}\t{self.phase}")
 
 
                     self.print("--------------------------------------------")
