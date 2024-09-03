@@ -82,8 +82,8 @@ class VehicleController(Node):
         self.focus_time = 5.0                                   # 5 seconds
 
         # auto landing constants
-        self.gimbal_time = 10.0                                 # 15 seconds
-        self.auto_landing_height = 10.0                          # start auto landing at 7m
+        self.gimbal_time = 5.0
+        self.auto_landing_height = 10.0
 
         """
         2. Logging setup
@@ -177,6 +177,7 @@ class VehicleController(Node):
         self.gimbal_counter = 0
         if is_jetson():
             self.ser = serial.Serial('/dev/ttyGimbal', 115200)
+            self.received_packet = bytearray()
 
         # UTC time
         self.utc_time = 0.0
@@ -353,7 +354,6 @@ class VehicleController(Node):
 
     def read_packet(self):
         st = time.time()
-        global received_packet
 
         # Check if there is any data available to read
         while self.ser.in_waiting > 0:
@@ -362,12 +362,12 @@ class VehicleController(Node):
             
             if data:
                 # Append the received byte to the packet
-                received_packet.extend(data)
+                self.received_packet.extend(data)
 
                 # Check if the packet starts with 0x55, 0x66 and is 16 bytes long
-                if len(received_packet) >= 16 and received_packet[0] == 0x55 and received_packet[1] == 0x66:
+                if len(self.received_packet) >= 16 and self.received_packet[0] == 0x55 and self.received_packet[1] == 0x66:
                     # We have a complete packet of 16 bytes
-                    complete_packet = received_packet[:16]  # Extract the complete packet
+                    complete_packet = self.received_packet[:16]  # Extract the complete packet
 
                     # Calculate the CRC for the first 14 bytes
                     calculated_crc = crc_xmodem(complete_packet[:14])
@@ -389,17 +389,18 @@ class VehicleController(Node):
 
                         print(time.time() - st)
                         # Clear the received_packet buffer
-                        received_packet = received_packet[16:]  # Remove the processed packet
+                        self.received_packet = self.received_packet[16:]  # Remove the processed packet
                         break
 
                     else:
                         print(f"CRC Check Failed: Calculated {format_bytearray(calculated_crc)}, Received {format_bytearray(received_crc)}")
+                        self.received_packet.clear()
                         break
                     
-                elif len(received_packet) > 16:
+                elif len(self.received_packet) > 16:
                     # If the buffer grows beyond 16 bytes without matching conditions, reset it
                     print("Incomplete or malformed packet, clearing buffer.")
-                    received_packet.clear()
+                    self.received_packet.clear()
                     break
 
 
