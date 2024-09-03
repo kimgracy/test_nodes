@@ -133,8 +133,8 @@ class TagPublisher(Node):
                         [np.sin(self.yaw), np.cos(self.yaw), 0],
                         [0, 0, 1]])
 
-        # 최종 회전 행렬 (Yaw * Pitch * Roll 순서로 곱함)
-        R = np.dot(R_z, np.dot(R_y, R_x))
+        # 최종 회전 행렬 (Yaw * Roll * Pitch 순서로 곱함)
+        R = np.dot(R_z, np.dot(R_x, R_y))
         
         return R            
 
