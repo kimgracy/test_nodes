@@ -5,7 +5,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPo
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from tf2_msgs.msg import TFMessage as TfMsg
-from my_bboxes_msg.msg import YoloObstacle, YoloTarget, VehiclePhase
+from my_bboxes_msg.msg import YoloObstacle, VehiclePhase
 
 import os
 import sys
@@ -39,9 +39,10 @@ class YoloDetector(Node):
         )
 
 
-        # Variables
+        # Variables for vehicle status
         self.phase = '8'
         self.subphase = 'yolo_only'
+        # Variables for YOLOv5
         self.y_threshold = 80
         self.frame_size = (1280, 720)
         self.yolo_size = (640, 360)
@@ -147,15 +148,6 @@ class YoloDetector(Node):
                 self.save_target_image(frame)
                 self.last_capture_time = current_time
 
-
-        """
-        Display frame to monitor
-        """
-        # add phase information to the frame in black color
-        cv2.putText(frame, f'Phase: {self.phase}', (10, 67), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
-        cv2.putText(frame, f'Subphase: {self.subphase}', (10, 130), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
-
-
         """
         Display apriltag position
         """
@@ -163,7 +155,18 @@ class YoloDetector(Node):
             cv2.circle(frame, (int(self.apriltag_x), int(self.apriltag_y)), 10, (0, 255, 0), -1)
             self.apriltag_detected = False
 
-        
+
+        """
+        Display Vehicle information to monitor
+        """
+        # add phase information to the frame in black color
+        cv2.putText(frame, f'Phase: {self.phase}', (10, 67), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
+        cv2.putText(frame, f'Subphase: {self.subphase}', (10, 130), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
+
+
+        """
+        Display frame to monitor
+        """
         # display frame to monitor
         cv2.imshow('YOLOv5 Detection', frame)
 
