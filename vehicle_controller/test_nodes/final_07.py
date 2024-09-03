@@ -137,7 +137,7 @@ class VehicleController(Node):
         # pause -> align to vertiport -> go slow -> pause -> align -> detecting obstacle -> avoiding obstacle -> landing align -> auto landing (obstacle detected and avoided)
         # pause -> align to vertiport -> go slow -> pause -> align -> detecting obstacle -> avoiding obstacle -> pause -> ... (obstacle detected and avoided but detected again)
         # pause -> align to vertiport -> go slow -> pause -> align -> detecting obstacle -> go slow -> ... (thought obstacle was detected but it was not)
-        self.subphase = 'landing align'
+        self.subphase = 'before flight'
 
         """
         5. State variables
@@ -250,6 +250,11 @@ class VehicleController(Node):
         print(*args, **kwargs)
         self.logger.info(*args, **kwargs)
 
+    def convert_global_to_local_waypoint(self, home_position_gps):
+        self.home_position = self.pos   # set home position
+        self.start_yaw = self.yaw     # set initial yaw
+        self.WP.append(np.array([-self.camera_to_center * np.cos(self.start_yaw), -self.camera_to_center * np.sin(self.start_yaw), -self.auto_landing_height]))  # set the camera's position to the home position
+
     def generate_bezier_curve(self, xi, xf, vmax):
         # reset counter
         self.bezier_counter = 0
@@ -285,7 +290,7 @@ class VehicleController(Node):
     def run_bezier_curve(self, bezier_points, goal_yaw=None):
         if goal_yaw is None:
             goal_yaw = self.yaw
-        
+
         if self.bezier_counter < self.num_bezier:
             self.publish_trajectory_setpoint(
                 position_sp = bezier_points[self.bezier_counter],
@@ -399,14 +404,26 @@ class VehicleController(Node):
 
 
     def main_timer_callback(self):
-        if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-            if self.subphase == 'landing align':
-                self.goal_yaw = np.pi / 6
-                self.goal_position = self.pos
-                self.goal_position[2] = -self.auto_landing_height
-                self.start_yaw = np.pi / 6
-                self.home_position = np.array([0.0, 0.0, 0.0])
-                self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.yaw + np.sign(np.sin(self.goal_yaw - self.yaw)) * self.yaw_speed)
+        if self.phase == 0:
+            if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED:
+                self.convert_global_to_local_waypoint(self.pos_gps)
+                self.phase = 1
+                self.subphase = 'position'
+                self.print('\n[phase : 0 -> 1]')
+                self.print('[subphase : before flight -> position]\n')
+
+        elif self.phase == 1:
+            if self.subphase == 'position':
+                if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                    self.goal_yaw = self.start_yaw
+                    self.goal_position = self.WP[1]
+                    self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
+                    self.subphase = 'landing align'
+                    self.print('\n[subphase : position -> landing align]\n')
+
+            elif self.subphase == 'landing align':
+                print(self.bezier_counter)
+                self.run_bezier_curve(self.bezier_points, self.goal_yaw)
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.gimbal_reboot()    # gimbal reboot for safety
                     self.gimbal_pitch = -90.0
