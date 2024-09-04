@@ -428,8 +428,6 @@ class VehicleController(Node):
         if self.phase in [0, 1, 7, 8, 9] :
             self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{self.pos_gps[2]:.6f}\t{self.utc_year}\t{self.utc_month}\t{self.utc_day}\t{self.utc_hour}\t{self.utc_min}\t{self.utc_sec}\t{self.utc_ms}\t{self.phase}")
 
-<<<<<<< HEAD
-=======
     def show_to_monitor_callback(self):
         image = np.zeros((180,800,3),np.uint8)
         cv2.putText(image, f'Pos: [{round(self.pos[0],2)},{round(self.pos[1],2)},{round(self.pos[2],2)}]', (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
@@ -443,7 +441,6 @@ class VehicleController(Node):
         cv2.imshow('Vehicle Information', image)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
->>>>>>> 53dca579fbc63ee890adad46df477d8a0aa51361
 
     def main_timer_callback(self):       
         if self.phase == 0:
