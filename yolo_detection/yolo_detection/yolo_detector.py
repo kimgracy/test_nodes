@@ -43,7 +43,8 @@ class YoloDetector(Node):
         self.phase = '8'
         self.subphase = 'yolo_only'
         # Variables for YOLOv5
-        self.y_threshold = 80
+        self.y_threshold_small = 80
+        self.y_threshold_big = 600
         self.frame_size = (1280, 720)
         self.yolo_size = (640, 360)
 
@@ -124,11 +125,15 @@ class YoloDetector(Node):
                     y_center = (y1 + y2) / 2
                     
                     # publish obstacle message and draw bounding box
-                    if (abs(y1-y2) >= self.y_threshold) and ((label == 'ladder-truck' or label == 'class4')):
+                    if (abs(y1-y2) >= self.y_threshold_small) and ((label == 'ladder-truck' or label == 'class4')):
                         # draw bounding box and label
                         label = 'ladder'
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                        cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                        if (abs(y1-y2) >= self.y_threshold_big): # red
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                            cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+                        else: # green
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                            cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
                         
                         # publish obstacle message when phase is 8
                         #if (self.phase == '8'):
@@ -152,7 +157,8 @@ class YoloDetector(Node):
         Display apriltag position
         """
         if self.apriltag_detected:
-            cv2.circle(frame, (int(self.apriltag_x), int(self.apriltag_y)), 10, (0, 255, 0), -1)
+            cv2.circle(frame, (int(self.apriltag_x), int(self.apriltag_y)), 10, (0, 0, 0), -1)
+            cv2.circle(frame, (int(self.apriltag_x), int(self.apriltag_y)), 8, (0, 0, 255), -1)
             self.apriltag_detected = False
 
 
