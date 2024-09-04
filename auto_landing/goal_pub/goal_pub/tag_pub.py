@@ -1,5 +1,8 @@
 import numpy as np
 import rclpy
+import logging
+import os
+from datetime import datetime, timedelta
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
@@ -75,12 +78,22 @@ class TagPublisher(Node):
         self.roll = 0 
         self.pitch = 0
         self.yaw = 0
+
+        log_dir = os.path.join(os.getcwd(), 'src/auto_landing/log')
+        os.makedirs(log_dir, exist_ok=True)
+        current_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        log_file = os.path.join(log_dir,  f'tag_log_{current_time}.txt')
+        logging.basicConfig(filename=log_file, level=logging.INFO, format='%(message)s')
+        self.logger = logging.getLogger(__name__)
+
+    def print(self, *args, **kwargs):
+        print(*args, **kwargs)
+        self.logger.info(*args, **kwargs)
     
     def tag_callback(self, msg):
         try:
             if self.detect == False:
                 self.detect = True
-                self.get_logger().info("Tag detected")
             transform = msg.transforms[0].transform
             tag_pose = transform.translation
             tag_q = transform.rotation
@@ -93,15 +106,17 @@ class TagPublisher(Node):
             self.last_tag = tag_world
            
             tag_world_msg = Float32MultiArray()
-            tag_world_msg.data = [tag_world[0], tag_world[1], tag_world[2]+0.4, 0., 0., 0.5] # in order of xf and vf
+            tag_world_msg.data = [tag_world[0], tag_world[1], tag_world[2]-0.4, 0., 0., 0.5] # in order of xf and vf
             
             self.tag_world_pub.publish(tag_world_msg)
+
+            self.print(f"tag_world : {tag_world}    drone_world : {self.drone_world}")
 
         except:
             if self.last_tag[0]:
                 tag_world = self.last_tag
                 tag_world_msg = Float32MultiArray()
-                tag_world_msg.data = [tag_world[0], tag_world[1], tag_world[2]+0.4, 0., 0., 0.5] # in order of xf and vf
+                tag_world_msg.data = [tag_world[0], tag_world[1], tag_world[2]-0.4, 0., 0., 0.5] # in order of xf and vf
             
                 self.tag_world_pub.publish(tag_world_msg)
             
