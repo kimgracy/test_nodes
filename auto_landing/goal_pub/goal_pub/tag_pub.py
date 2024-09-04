@@ -95,6 +95,7 @@ class TagPublisher(Node):
             if self.detect == False:
                 self.detect = True
             transform = msg.transforms[0].transform
+            frame_id = msg.transforms[0].child_frame_id
             tag_pose = transform.translation
             tag_q = transform.rotation
             
@@ -110,15 +111,10 @@ class TagPublisher(Node):
             
             self.tag_world_pub.publish(tag_world_msg)
 
-            self.print(f"tag_world : {tag_world}    drone_world : {self.drone_world}")
+            self.print(f"tag_world : {tag_world}    drone_world : {self.drone_world}    id : {frame_id}")
 
         except:
-            if self.last_tag[0]:
-                tag_world = self.last_tag
-                tag_world_msg = Float32MultiArray()
-                tag_world_msg.data = [tag_world[0], tag_world[1], tag_world[2]-0.4, 0., 0., 0.5] # in order of xf and vf
-            
-                self.tag_world_pub.publish(tag_world_msg)
+            print("apriltag not dtected")
             
     def att_callback(self, msg):
         try:
