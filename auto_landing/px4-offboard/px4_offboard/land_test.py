@@ -159,7 +159,7 @@ class VehicleController(Node):
                 self.phase = 0.5
         elif self.phase == 0.5:
             self.gimbal_pitchangle = -math.pi/2
-            self.current_goal = [0.0, -3.0, -5.0]
+            self.current_goal = [0.0, -5.0, -10.0]
             self.publish_trajectory_setpoint(position_sp=self.current_goal)
             if np.linalg.norm(self.pos - self.current_goal) < self.mc_acceptance_radius:
                 self.phase = 1

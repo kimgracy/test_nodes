@@ -24,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'tag_pub = goal_pub.tag_pub:main',
+            'tag_pub_2 = goal_pub.tag_pub_2:main',
             'filter = goal_pub.filter:main',
             'filter_2 = goal_pub.filter_2:main',
             'depth = goal_pub.depth:main',

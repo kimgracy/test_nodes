@@ -1,4 +1,8 @@
 vehicle_controller: # Name of node
   ros__parameters: # ROS parameters
     # WP: [latitude, longitude, relative altitude]
+<<<<<<< HEAD
     gps_WP1: [37.4562444, 126.9540216, 5.0]
+=======
+    gps_WP1: [37.4559949, 126.9541629, 5.0]
+>>>>>>> 53dca579fbc63ee890adad46df477d8a0aa51361

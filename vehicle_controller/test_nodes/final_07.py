@@ -82,8 +82,8 @@ class VehicleController(Node):
         self.focus_time = 5.0                                   # 5 seconds
 
         # auto landing constants
-        self.gimbal_time = 10.0                                 # 15 seconds
-        self.auto_landing_height = 10.0                          # start auto landing at 7m
+        self.gimbal_time = 5.0
+        self.auto_landing_height = 10.0
 
         """
         2. Logging setup
@@ -137,7 +137,7 @@ class VehicleController(Node):
         # pause -> align to vertiport -> go slow -> pause -> align -> detecting obstacle -> avoiding obstacle -> landing align -> auto landing (obstacle detected and avoided)
         # pause -> align to vertiport -> go slow -> pause -> align -> detecting obstacle -> avoiding obstacle -> pause -> ... (obstacle detected and avoided but detected again)
         # pause -> align to vertiport -> go slow -> pause -> align -> detecting obstacle -> go slow -> ... (thought obstacle was detected but it was not)
-        self.subphase = 'landing align'
+        self.subphase = 'before flight'
 
         """
         5. State variables
@@ -177,6 +177,7 @@ class VehicleController(Node):
         self.gimbal_counter = 0
         if is_jetson():
             self.ser = serial.Serial('/dev/ttyGimbal', 115200)
+            self.received_packet = bytearray()
 
         # UTC time
         self.utc_time = 0.0
@@ -250,6 +251,11 @@ class VehicleController(Node):
         print(*args, **kwargs)
         self.logger.info(*args, **kwargs)
 
+    def convert_global_to_local_waypoint(self, home_position_gps):
+        self.home_position = self.pos   # set home position
+        self.start_yaw = self.yaw     # set initial yaw
+        self.WP.append(np.array([-self.camera_to_center * np.cos(self.start_yaw), -self.camera_to_center * np.sin(self.start_yaw), -self.auto_landing_height]))  # set the camera's position to the home position
+
     def generate_bezier_curve(self, xi, xf, vmax):
         # reset counter
         self.bezier_counter = 0
@@ -285,7 +291,7 @@ class VehicleController(Node):
     def run_bezier_curve(self, bezier_points, goal_yaw=None):
         if goal_yaw is None:
             goal_yaw = self.yaw
-        
+
         if self.bezier_counter < self.num_bezier:
             self.publish_trajectory_setpoint(
                 position_sp = bezier_points[self.bezier_counter],
@@ -348,7 +354,6 @@ class VehicleController(Node):
 
     def read_packet(self):
         st = time.time()
-        global received_packet
 
         # Check if there is any data available to read
         while self.ser.in_waiting > 0:
@@ -357,12 +362,12 @@ class VehicleController(Node):
             
             if data:
                 # Append the received byte to the packet
-                received_packet.extend(data)
+                self.received_packet.extend(data)
 
                 # Check if the packet starts with 0x55, 0x66 and is 16 bytes long
-                if len(received_packet) >= 16 and received_packet[0] == 0x55 and received_packet[1] == 0x66:
+                if len(self.received_packet) >= 16 and self.received_packet[0] == 0x55 and self.received_packet[1] == 0x66:
                     # We have a complete packet of 16 bytes
-                    complete_packet = received_packet[:16]  # Extract the complete packet
+                    complete_packet = self.received_packet[:16]  # Extract the complete packet
 
                     # Calculate the CRC for the first 14 bytes
                     calculated_crc = crc_xmodem(complete_packet[:14])
@@ -384,29 +389,42 @@ class VehicleController(Node):
 
                         print(time.time() - st)
                         # Clear the received_packet buffer
-                        received_packet = received_packet[16:]  # Remove the processed packet
+                        self.received_packet = self.received_packet[16:]  # Remove the processed packet
                         break
 
                     else:
                         print(f"CRC Check Failed: Calculated {format_bytearray(calculated_crc)}, Received {format_bytearray(received_crc)}")
+                        self.received_packet.clear()
                         break
                     
-                elif len(received_packet) > 16:
+                elif len(self.received_packet) > 16:
                     # If the buffer grows beyond 16 bytes without matching conditions, reset it
                     print("Incomplete or malformed packet, clearing buffer.")
-                    received_packet.clear()
+                    self.received_packet.clear()
                     break
 
 
     def main_timer_callback(self):
-        if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-            if self.subphase == 'landing align':
-                self.goal_yaw = np.pi / 6
-                self.goal_position = self.pos
-                self.goal_position[2] = -self.auto_landing_height
-                self.start_yaw = np.pi / 6
-                self.home_position = np.array([0.0, 0.0, 0.0])
-                self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.yaw + np.sign(np.sin(self.goal_yaw - self.yaw)) * self.yaw_speed)
+        if self.phase == 0:
+            if self.vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED:
+                self.convert_global_to_local_waypoint(self.pos_gps)
+                self.phase = 1
+                self.subphase = 'position'
+                self.print('\n[phase : 0 -> 1]')
+                self.print('[subphase : before flight -> position]\n')
+
+        elif self.phase == 1:
+            if self.subphase == 'position':
+                if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
+                    self.goal_yaw = self.start_yaw
+                    self.goal_position = self.WP[1]
+                    self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
+                    self.subphase = 'landing align'
+                    self.print('\n[subphase : position -> landing align]\n')
+
+            elif self.subphase == 'landing align':
+                print(self.bezier_counter)
+                self.run_bezier_curve(self.bezier_points, self.goal_yaw)
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.gimbal_reboot()    # gimbal reboot for safety
                     self.gimbal_pitch = -90.0
