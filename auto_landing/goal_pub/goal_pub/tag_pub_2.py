@@ -64,13 +64,6 @@ class TagPublisher(Node):
             self.gps_callback,
             qos_profile
         )
-        
-        self.tag_sub = self.create_subscription(
-            TfMsg,
-            'tf',
-            self.tag_callback,
-            10
-        )
 
         self.phase_sub = self.create_subscription(
             Float32MultiArray,
@@ -79,23 +72,28 @@ class TagPublisher(Node):
             10
         )
         
-        # parameter
-
-        self.xf_pub = self.create_publisher(Float32MultiArray, 'bezier_waypoint', 10)
+        self.tag_sub = self.create_subscription(
+            TfMsg,
+            'tf',
+            self.tag_callback,
+            10
+        )
+        
+        self.tag_world_pub = self.create_publisher(Float32MultiArray, 'bezier_waypoint', 10)
+        self.last_tag = np.array([0,0,0])
+        self.detect = False
+        self.phase = 0
+        self.roll = 0 
+        self.pitch = 0
+        self.alpha = 0.8
         self.first = True
         self.yaw = 0
-        self.drone_q = [1.0,0.0,0.0,0.0]
-        self.drone_world = [0.0, 0.0, 0.0]
+        self.curent_waypoint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.5]
         self.past_waypoint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.5]
-        self.waypoint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.5]
-        self.phase = 0
-        self.alpha = 0.8
 
-        # timer
 
         self.timer = self.create_timer(3, self.timer_callback)
 
-        # logger
 
         log_dir = os.path.join(os.getcwd(), 'src/auto_landing/log')
         os.makedirs(log_dir, exist_ok=True)
@@ -109,8 +107,8 @@ class TagPublisher(Node):
         self.logger.info(*args, **kwargs)
     
     def tag_callback(self, msg):
-        if self.phase:
-            try:
+        try:
+            if self.phase:
                 if len(msg.transforms) == 2:
                     transform_0 = msg.transforms[0].transform
                     tag_pose_0 = transform_0.translation
@@ -127,50 +125,47 @@ class TagPublisher(Node):
                     current_waypoint_1 = [tag_world_1[0], tag_world_1[1], tag_world_1[2]-0.4, 0., 0., 0.5] 
 
                     if np.linalg.norm(current_waypoint_0-self.past_waypoint) < np.linalg.norm(current_waypoint_1-self.past_waypoint):
-                        current_waypoint = current_waypoint_0
+                        self.current_waypoint = current_waypoint_0
                     else :
-                        current_waypoint = current_waypoint_1
+                        self.current_waypoint = current_waypoint_1
                     
                 else:
                     transform = msg.transforms[0].transform
-                    frame_id = msg.transforms[0].child_frame_id
                     tag_pose = transform.translation
                     tag_body = np.array([-tag_pose.y, tag_pose.x, tag_pose.z])  
                     drone2tag_world = np.matmul(self.rotation_yaw,tag_body)
                     tag_world = drone2tag_world+self.drone_world
-                    current_waypoint = [tag_world[0], tag_world[1], tag_world[2]-0.4, 0., 0., 0.5] 
-                
+                    self.current_waypoint = [tag_world[0], tag_world[1], tag_world[2]-0.4, 0., 0., 0.5]
                 
                 if self.first:
-                    self.past_waypoint = current_waypoint
+                    self.past_waypoint = self.current_waypoint
                     self.first = False
-                self.waypoint = self.alpha * current_waypoint + (1-self.alpha) * self.past_waypoint
+                
+                self.waypoint = self.alpha * self.current_waypoint + (1- self.alpha) * self.past_waypoint
                 self.past_waypoint = self.waypoint
 
-                self.print(f"tag_world : {tag_world}    drone_world : {self.drone_world}    id : {frame_id}")
+                self.detect = True
+                
+                self.print(f"tag_world : {tag_world}    drone_world : {self.drone_world}")
 
-            except Exception as e:
-                self.print("apriltag not dtected")
-                self.print(f"error : {e}")
-    
-    def timer_callback(self):
-        if self.first == False:
-            xf_msg = Float32MultiArray()
-            xf_msg.data = self.waypoint
-            self.xf_pub.publish(xf_msg)
-
-    def phase_check_callback(self, msg):
-        if self.phase == 0:
-            self.home = msg.data[0:3]
-            self.past_waypoint = [self.home[0], self.home[1], self.home[2], 0., 0., 0.5]
-        self.phase = 1
-        
-
+        except:
+            self.print("apriltag not dtected")
+            
     def att_callback(self, msg):
         try:
             self.drone_q = msg.q
         except:
             self.get_logger().info("Oh no,,, att not received")
+
+    def phase_check_callback(self, msg):
+        print("ok")
+        self.phase = 1
+
+    def timer_callback(self):
+        if self.detect:
+            tag_world_msg = Float32MultiArray()
+            tag_world_msg.data = self.waypoint # in order of xf and vf
+            self.tag_world_pub.publish(tag_world_msg)
 
     def gps_callback(self, msg):
         try:

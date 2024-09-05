@@ -262,7 +262,7 @@ class BezierControl(Node):
         self.point1 = bezier_points.point1#
         self.point3 = bezier_points.point3#
         self.point4 = bezier_points.point4#
-        self.trigger = 1 # T reset trigger
+        self.delta_t = 0
         #self.get_logger().info("go")
 
 
@@ -400,11 +400,6 @@ class BezierControl(Node):
 
                     self.print(f"apriltag no bezier - xf : {self.xf},   vehicle_position : {self.vehicle_position}")
 
-
-                if self.trigger == 1:  # delta_t reset 
-                    self.delta_t = 0
-                    self.trigger = 0
-                    #self.get_logger().info("gogo")
         
 
 def main(args=None):
