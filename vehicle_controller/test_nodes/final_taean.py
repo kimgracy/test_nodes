@@ -429,7 +429,7 @@ class VehicleController(Node):
                         or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_FOLLOW_TARGET \
                         or self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_AUTO_PRECLAND)
         if self.phase in [0, 1, 7, 8, 9] :
-            self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{(self.pos_gps[2]-self.home_position_gps[2]):.6f}\t{self.utc_year}\t{self.utc_month}\t{self.utc_day}\t{self.utc_hour}\t{self.utc_min}\t{self.utc_sec}\t{self.utc_ms}\t{self.phase}")
+            self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{-self.pos[2]:.6f}\t{self.utc_year}\t{self.utc_month}\t{self.utc_day}\t{self.utc_hour}\t{self.utc_min}\t{self.utc_sec}\t{self.utc_ms}\t{self.phase}")
 
     def show_to_monitor_callback(self):
         image = np.zeros((180,800,3),np.uint8)
@@ -492,7 +492,7 @@ class VehicleController(Node):
         elif self.phase in range(2, 7):
             if np.linalg.norm(self.pos - self.WP[self.phase]) >= self.nearby_acceptance_radius: # far from WP
                 if len(self.log_dict['utc_time']) == 0:
-                    self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{(self.pos_gps[2]-self.home_position_gps[2]):.6f}\t{self.utc_year}\t{self.utc_month}\t{self.utc_day}\t{self.utc_hour}\t{self.utc_min}\t{self.utc_sec}\t{self.utc_ms}\t{self.phase}")
+                    self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{-self.pos[2]:.6f}\t{self.utc_year}\t{self.utc_month}\t{self.utc_day}\t{self.utc_hour}\t{self.utc_min}\t{self.utc_sec}\t{self.utc_ms}\t{self.phase}")
                 else:
                     # horziontal error: np.linalg.norm(x error, y error)
                     # vertical error: z error
@@ -544,7 +544,7 @@ class VehicleController(Node):
                             phase = self.phase
                         else:
                             phase = self.phase + 1
-                        self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{(self.pos_gps[2]-self.home_position_gps[2]):.6f}\t{self.utc_year}\t{self.utc_month}\t{self.utc_day}\t{self.utc_hour}\t{self.utc_min}\t{self.utc_sec}\t{self.utc_ms}\t{self.phase}")
+                        self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{-self.pos[2]:.6f}\t{self.utc_year}\t{self.utc_month}\t{self.utc_day}\t{self.utc_hour}\t{self.utc_min}\t{self.utc_sec}\t{self.utc_ms}\t{self.phase}")
 
 
                     self.print("--------------------------------------------")
