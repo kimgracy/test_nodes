@@ -69,7 +69,7 @@ class VehicleController(Node):
         # bezier curve constants
         self.fast_vmax = 5.0
         self.slow_vmax = 2.5
-        self.very_slow_vmax = 0.2
+        self.very_slow_vmax = 0.3
         self.max_acceleration = 9.81 * np.tan(10 * np.pi / 180)  # 10 degree tilt angle
         self.mc_start_speed = 0.0001
         self.mc_end_speed = 0.0001
@@ -95,9 +95,10 @@ class VehicleController(Node):
 
         # emergency detection
         self.emergency_detecting_again = False
-        self.align_emergency_threshold = int(30 / self.time_period)
+        self.align_emergency_threshold = int(60 / self.time_period)
+        self.landing_align_emergency_threshold = int(60 / self.time_period)
         self.emergency_corridor_radius = 2.0
-        self.emergency_obstacle_direction = 1                   # right: 1, left: -1
+        self.emergency_obstacle_direction = 1                   # right: 1(avoiding to left direction), left: -1
 
         """
         2. Logging setup
@@ -177,7 +178,7 @@ class VehicleController(Node):
         self.bezier_points = None
 
         # YOLOv5
-        self.obstacle = False
+        self.obstacle_label = ''
         self.obstacle_x = 0
         self.obstacle_y = 0
         self.left_or_right = 0
@@ -477,15 +478,15 @@ class VehicleController(Node):
                         self.print('Yaw alignment failed')
                         self.emergency_time_checker = 0
                         self.phase = 3
-                        self.subphase = 'emergency detected'
+                        self.subphase = 'path generated'
                         self.print('\n[phase: 2 -> 3]')
-                        self.print('[subphase : align to vertiport -> emergency detected]\n')
+                        self.print('[subphase : align to vertiport -> path generated]\n')
 
         elif self.phase == 3:
             if self.subphase == 'go slow':
                 self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                if self.obstacle:
-                    self.obstacle = False
+                if self.obstacle_label == 'ladder':
+                    self.obstacle_label = ''
                     self.ladder_count += 1
                     self.print(f'Detected obstacle : {self.ladder_count} times')
                     if self.ladder_count >= self.yolo_hz * self.quick_time:
@@ -494,6 +495,9 @@ class VehicleController(Node):
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, np.linalg.norm(self.vel))
                         self.subphase = 'pause'
                         self.print('\n[subphase : go slow -> pause]\n')
+                        self.print(f'current pos, vel: {self.pos}, {self.vel}')
+                        self.print(f'goal_position: {self.goal_position}\n')
+                        self.print(f'bezier_point: {self.bezier_points}\n')
 
                 # if reach the WP8 without confronting obstacle
                 if np.linalg.norm(self.pos - self.WP[3]) < self.mc_acceptance_radius:
@@ -512,32 +516,28 @@ class VehicleController(Node):
                     self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[2], self.WP[3])
                     direction = (self.WP[3] - self.WP[2]) / np.linalg.norm(self.WP[3] - self.WP[2])
                     self.goal_position = self.WP[2] + direction * np.dot(self.pos - self.WP[2], direction)
-                    self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
+                    self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.very_slow_vmax)
                     self.emergency_time_checker = 0
                     self.subphase = 'align'
                     self.print('\n[subphase : pause -> align]\n')
             
             elif self.subphase == 'align':
                 self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                # if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
-                #     self.left_or_right = 0
-                #     self.ladder_count = 0
-                #     self.subphase = 'detecting obstacle'
-                #     self.print('\n[subphase : align -> detecting obstacle]\n')
+                if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
+                    self.left_or_right = 0
+                    self.ladder_count = 0
+                    self.subphase = 'detecting obstacle'
+                    self.print('\n[subphase : align -> detecting obstacle]\n')
                 
-                # else:
-                #     # emergency detection
-                #     self.emergency_time_checker += 1
-                #     if self.emergency_time_checker >= self.align_emergency_threshold:
-                #         self.print('Yaw alignment failed')
-                #         self.emergency_time_checker = 0
-                #         self.subphase = 'emergency detected'
-                #         self.print('[subphase : align to vertiport -> emergency detected]\n')
-                self.print('Yaw alignment failed')
-                self.emergency_time_checker = 0
-                self.subphase = 'emergency detected'
-                self.print('[subphase : align to vertiport -> emergency detected]\n')
-            
+                else:
+                    # emergency detection
+                    self.emergency_time_checker += 1
+                    if self.emergency_time_checker >= self.align_emergency_threshold:
+                        self.print('Yaw alignment failed')
+                        self.emergency_time_checker = 0
+                        self.subphase = 'path generated'
+                        self.print('[subphase : align to vertiport -> path generated]\n')
+                
             elif self.subphase == 'detecting obstacle':
                 self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.goal_yaw)
                 if self.yolo_time_count >= self.yolo_hz * self.focus_time:
@@ -566,12 +566,13 @@ class VehicleController(Node):
                         self.print('\n[subphase : detecting obstacle -> go slow]\n')
 
                 else:
-                    self.yolo_time_count += 1
-                    if self.obstacle:
-                        self.obstacle = False
-                        self.ladder_count += 1
-                        self.left_or_right += 1 if self.obstacle_x > (self.image_size[0] / 2) else -1
-                        self.print(f'Detected obstacle : {self.ladder_count} times, ({self.obstacle_x}, {self.obstacle_y})')
+                    if self.obstacle_label != '':
+                        if self.obstacle_label == 'ladder':
+                            self.ladder_count += 1
+                            self.left_or_right += 1 if self.obstacle_x > (self.image_size[0] / 2) else -1
+                            self.print(f'Detected obstacle : {self.ladder_count} times, ({self.obstacle_x}, {self.obstacle_y})')
+                        self.obstacle_label = ''
+                        self.yolo_time_count += 1
 
             elif self.subphase == 'avoiding obstacle':
                 # go along with ractangle path. but if you find obstacle being in front of you  =>  'pause'.
@@ -581,7 +582,7 @@ class VehicleController(Node):
                         self.yolo_wp_checker = 1
                         self.goal_yaw = self.start_yaw
                         self.goal_position = self.WP[4]
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
+                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.very_slow_vmax)
                         self.phase = 4
                         self.subphase = 'landing align'
                         self.print('\n[phase : 3 -> 4]')
@@ -592,8 +593,8 @@ class VehicleController(Node):
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.fast_vmax)
                 else:
                     self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                    if self.obstacle and self.yolo_wp_checker == 2 and np.sign(self.left_or_right) * (self.obstacle_x-(self.image_size[0]/2)) < self.critical_threshold:
-                        self.obstacle = False
+                    if self.obstacle_label == 'ladder' and self.yolo_wp_checker == 2 and np.sign(self.left_or_right) * (self.obstacle_x-(self.image_size[0]/2)) < self.critical_threshold:
+                        self.obstacle_label = ''
                         self.ladder_count += 1
                         self.print(f'Detected obstacle in critical section: {self.ladder_count} times')
                         if self.ladder_count >= self.yolo_hz * self.quick_time:
@@ -602,28 +603,31 @@ class VehicleController(Node):
                             self.goal_position = self.get_braking_position(self.pos, self.vel)
                             self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, np.linalg.norm(self.vel))
                             if self.emergency_detecting_again:
-                                self.subphase = 'emergency detected'
-                                self.print('\n[subphase : avoiding obstacle -> emergency detected]\n')
+                                self.subphase = 'path generated'
+                                self.print('\n[subphase : avoiding obstacle -> path generated]\n')
                             else:
                                 self.emergency_detecting_again = True
                                 self.subphase = 'pause'
                                 self.print('\n[subphase : avoiding obstacle -> pause]\n')
 
-            elif self.subphase == 'emergency detected':
+            elif self.subphase == 'path generated':
                 self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[2], self.WP[3])
                 avoid_direction = np.array([np.cos(self.goal_yaw - np.sign(self.emergency_obstacle_direction) * np.pi/2), np.sin(self.goal_yaw - np.sign(self.emergency_obstacle_direction) * np.pi/2), 0.0])
-                self.yolo_WP[0] = self.pos
-                self.yolo_WP[1] = self.pos + self.emergency_corridor_radius * avoid_direction
+                
+                direction = (self.WP[3] - self.WP[2]) / np.linalg.norm(self.WP[3] - self.WP[2])
+                self.yolo_WP[0] = self.WP[2] + direction * np.dot(self.pos - self.WP[2], direction)
+                self.yolo_WP[1] = self.WP[2] + direction * np.dot(self.pos - self.WP[2], direction) + self.emergency_corridor_radius * avoid_direction
                 self.yolo_WP[2] = self.WP[3] + self.emergency_corridor_radius * avoid_direction
                 self.yolo_WP[3] = self.WP[3]
+
                 self.ladder_count = 0
                 self.yolo_time_count = 0
                 self.goal_position = self.yolo_WP[self.yolo_wp_checker]
                 self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.very_slow_vmax)  # very slow (not to go out of the corridor)
-                self.subphase = 'avoiding obstacle'
-                self.print('\n[subphase : detecting obstacle -> avoiding obstacle]\n')
+                self.subphase = 'path following'
+                self.print('\n[subphase : emergency detected -> path following]\n')
                 
-            elif self.subphase == 'emergency':
+            elif self.subphase == 'path following':
                 self.run_bezier_curve(self.bezier_points)
                 if np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.print(f"\nyolo wp{self.yolo_wp_checker} reached\n")
@@ -634,6 +638,7 @@ class VehicleController(Node):
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
                         self.phase = 4
                         self.subphase = 'landing align'
+                        self.emergency_time_checker = 0
                         self.print('\n[phase : 3 -> 4]')
                         self.print('[subphase : avoiding obstacle -> landing align]\n')
                     else:
@@ -648,6 +653,16 @@ class VehicleController(Node):
                     self.gimbal_reboot()    # gimbal reboot for safety
                     self.gimbal_pitch = -90.0
                     self.subphase = 'prepare landing'
+                    self.print('\n[subphase : landing align -> prepare landing]\n')
+                
+                # emergency detection
+                self.emergency_time_checker += 1
+                self.print(f'Emergency time checker: {self.emergency_time_checker}')
+                if self.emergency_time_checker >= self.landing_align_emergency_threshold:
+                    self.gimbal_reboot()    # gimbal reboot for safety
+                    self.gimbal_pitch = -90.0
+                    self.subphase = 'prepare landing'
+                    self.print('\nLanding align failed\n')
                     self.print('\n[subphase : landing align -> prepare landing]\n')
 
             elif self.subphase == 'prepare landing':
@@ -708,7 +723,7 @@ class VehicleController(Node):
         self.utc_ms = self.utc_datetime.microsecond // 1000  # Convert microseconds to milliseconds
     
     def yolo_obstacle_callback(self, msg):
-        self.obstacle = True
+        self.obstacle_label = msg.label
         self.obstacle_x = int(msg.x)
         self.obstacle_y = int(msg.y)
 
