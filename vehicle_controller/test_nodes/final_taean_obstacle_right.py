@@ -67,9 +67,10 @@ class VehicleController(Node):
         self.heading_acceptance_angle = 0.1                      # 0.1 rad = 5.73 deg
 
         # bezier curve constants
+        self.very_fast_vmax = 7.0
         self.fast_vmax = 5.0
         self.slow_vmax = 2.5
-        self.very_slow_vmax = 0.3
+        self.very_slow_vmax = 1.0
         self.max_acceleration = 9.81 * np.tan(10 * np.pi / 180)  # 10 degree tilt angle
         self.mc_start_speed = 0.0001
         self.mc_end_speed = 0.0001
@@ -95,7 +96,7 @@ class VehicleController(Node):
 
         # emergency detection
         self.emergency_detecting_again = False
-        self.align_emergency_threshold = int(30 / self.time_period)
+        self.align_emergency_threshold = int(60 / self.time_period)
         self.landing_align_emergency_threshold = int(60 / self.time_period)
         self.emergency_corridor_radius = 2.0
         self.emergency_obstacle_direction = 1                  # right: 1, left: -1
@@ -183,6 +184,7 @@ class VehicleController(Node):
         self.obstacle_y = 0
         self.left_or_right = 0
         self.ladder_count = 0
+        self.time_count = 0
         self.yolo_time_count = 0
         self.yolo_wp_checker = 1
         self.yolo_WP = [np.array([0.0, 0.0, 0.0]),np.array([0.0, 0.0, 0.0]),np.array([0.0, 0.0, 0.0]),np.array([0.0, 0.0, 0.0])]
@@ -294,7 +296,7 @@ class VehicleController(Node):
             vi = self.mc_start_speed * direction
         else:
             vi = self.vel
-            self.bezier_counter = int(1 / self.time_period) - 1
+        self.bezier_counter = int(1 / self.time_period) - 1
 
         point1 = xi
         point2 = xi + vi * total_time / 3
@@ -657,7 +659,7 @@ class VehicleController(Node):
             
             elif self.subphase == 'detecting obstacle':
                 self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.goal_yaw)
-                if self.yolo_time_count >= self.yolo_hz * self.focus_time:
+                if self.time_count >= self.yolo_hz * self.focus_time:
                     obstacle_detect_ratio = self.ladder_count / self.yolo_time_count
                     if obstacle_detect_ratio >= 0.55:
                         self.print(f'Ladder-truck Orientation: {"right" if self.left_or_right > 0 else "left"}')
@@ -668,6 +670,7 @@ class VehicleController(Node):
                         self.yolo_WP[2] = self.WP[8] + self.corridor_radius * avoid_direction
                         self.yolo_WP[3] = self.WP[8]
                         self.ladder_count = 0
+                        self.time_count = 0
                         self.yolo_time_count = 0
                         self.goal_position = self.yolo_WP[self.yolo_wp_checker]
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.very_slow_vmax)  # very slow (not to go out of the corridor)
@@ -675,6 +678,7 @@ class VehicleController(Node):
                         self.print('\n[subphase : detecting obstacle -> avoiding obstacle]\n')
                     else:
                         self.ladder_count = 0
+                        self.time_count = 0
                         self.yolo_time_count = 0
                         self.left_or_right = 0
                         self.goal_position = self.WP[8]
@@ -683,6 +687,7 @@ class VehicleController(Node):
                         self.print('\n[subphase : detecting obstacle -> go slow]\n')
 
                 else:
+                    self.time_count += 1
                     if self.obstacle_label != '':
                         if self.obstacle_label == 'ladder':
                             self.ladder_count += 1
@@ -695,13 +700,14 @@ class VehicleController(Node):
                 # go along with ractangle path. but if you find obstacle being in front of you  =>  'pause'.
                 if np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.print(f"\nyolo wp{self.yolo_wp_checker} reached\n")
-                    if self.yolo_wp_checker == 3:
+                    if self.yolo_wp_checker == 2:
                         self.yolo_wp_checker = 1
                         self.goal_yaw = self.start_yaw
                         self.goal_position = self.WP[9]
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.very_slow_vmax)
                         self.phase = 9
                         self.subphase = 'landing align'
+                        self.emergency_time_checker = 0
                         self.print('\n[phase : 8 -> 9]')
                         self.print('[subphase : avoiding obstacle -> landing align]\n')
                     else:
@@ -748,19 +754,20 @@ class VehicleController(Node):
                 self.run_bezier_curve(self.bezier_points)
                 if np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.print(f"\nyolo wp{self.yolo_wp_checker} reached\n")
-                    if self.yolo_wp_checker == 3:
+                    if self.yolo_wp_checker == 2:
                         self.yolo_wp_checker = 1
                         self.goal_yaw = self.start_yaw
                         self.goal_position = self.WP[9]
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
                         self.phase = 9
                         self.subphase = 'landing align'
+                        self.emergency_time_checker = 0
                         self.print('\n[phase : 8 -> 9]')
                         self.print('[subphase : avoiding obstacle -> landing align]\n')
                     else:
                         self.yolo_wp_checker += 1
                         self.goal_position = self.yolo_WP[self.yolo_wp_checker]
-                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.fast_vmax)
+                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.very_fast_vmax)
 
         elif self.phase == 9:
             if self.subphase == 'landing align':
