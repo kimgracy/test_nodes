@@ -88,8 +88,8 @@ class TagPublisher(Node):
         self.alpha = 0.8
         self.first = True
         self.yaw = 0
-        self.curent_waypoint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.5]
-        self.past_waypoint = [0.0, 0.0, 0.0, 0.0, 0.0, 0.5]
+        self.curent_waypoint = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.5])
+        self.past_waypoint = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.5])
 
 
         self.timer = self.create_timer(3, self.timer_callback)
@@ -108,7 +108,7 @@ class TagPublisher(Node):
     
     def tag_callback(self, msg):
         try:
-            if self.phase:
+            if self.phase and len(msg.transforms) > 0:
                 if len(msg.transforms) == 2:
                     transform_0 = msg.transforms[0].transform
                     tag_pose_0 = transform_0.translation
@@ -135,7 +135,8 @@ class TagPublisher(Node):
                     tag_body = np.array([-tag_pose.y, tag_pose.x, tag_pose.z])  
                     drone2tag_world = np.matmul(self.rotation_yaw,tag_body)
                     tag_world = drone2tag_world+self.drone_world
-                    self.current_waypoint = [tag_world[0], tag_world[1], tag_world[2]-0.4, 0., 0., 0.5]
+                    self.current_waypoint = np.array([tag_world[0], tag_world[1], tag_world[2]-0.4, 0., 0., 0.5])
+                    
                 
                 if self.first:
                     self.past_waypoint = self.current_waypoint
@@ -148,8 +149,9 @@ class TagPublisher(Node):
                 
                 self.print(f"tag_world : {tag_world}    drone_world : {self.drone_world}")
 
-        except:
-            self.print("apriltag not dtected")
+        except Exception as e:
+            self.print("apriltag not detected")
+            self.print(e)
             
     def att_callback(self, msg):
         try:
@@ -164,7 +166,7 @@ class TagPublisher(Node):
     def timer_callback(self):
         if self.detect:
             tag_world_msg = Float32MultiArray()
-            tag_world_msg.data = self.waypoint # in order of xf and vf
+            tag_world_msg.data = self.waypoint.tolist() # in order of xf and vf
             self.tag_world_pub.publish(tag_world_msg)
 
     def gps_callback(self, msg):
