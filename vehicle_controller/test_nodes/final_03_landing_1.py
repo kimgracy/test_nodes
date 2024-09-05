@@ -86,7 +86,7 @@ class VehicleController(Node):
         self.auto_landing_height = 10.0
 
         # vehicle status
-        self.vehicle_status_array = ['Manual', 'Altitude', 'Position', 'Mission', 'Loiter', 'PositionSlow', 'free5', 'free4', 'free3', 'Acro', 'free2', 'descend', 'Termination', 'Offboard', 'Stablized', 'free1', 'Takeoff', 'Land']
+        self.vehicle_status_array = ['Manual', 'Altitude', 'Position', 'Mission', 'Hold', 'RTL', 'PositionSlow', 'free5', 'free4', 'free3', 'Acro', 'free2', 'descend', 'Termination', 'Offboard', 'Stablized', 'free1', 'Takeoff', 'Land']
 
         """
         2. Logging setup
@@ -425,10 +425,10 @@ class VehicleController(Node):
                     break
 
     def show_to_monitor_callback(self):
-        image = np.zeros((180,800,3),np.uint8)
+        image = np.zeros((180,500,3),np.uint8)
         cv2.putText(image, f'Pos: [{round(self.pos[0],2)},{round(self.pos[1],2)},{round(self.pos[2],2)}]', (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        cv2.putText(image, f'Vel: [{round(self.vel[0],2)},{round(self.vel[1],2)},{round(self.vel[2],2)}]. {round(np.linalg.norm(self.vel))}', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        cv2.putText(image, f'state: {self.vehicle_status_array[self.vehicle_status.nav_state]})', (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(image, f'Vel: {round(np.linalg.norm(self.vel), 2)}. [{round(self.vel[0],2)},{round(self.vel[1],2)},{round(self.vel[2],2)}]', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(image, f'State: {self.vehicle_status_array[self.vehicle_status.nav_state]}', (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         if (self.phase == 8) and (self.subphase == 'avoiding obstacle'):
             if self.left_or_right > 0:
                 cv2.putText(image, f'Obstacle direction: right', (10, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)

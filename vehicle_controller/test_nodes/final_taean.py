@@ -77,7 +77,7 @@ class VehicleController(Node):
 
         # yolo constants
         self.image_size = np.array([1280, 720])
-        self.critical_threshold = 15                            # 15 pixels
+        self.critical_threshold = 25                            # 15 pixels
         self.yolo_hz = 10                                       # theoretically 30Hz, but 10Hz in practice
         self.quick_time = 1.0                                   # 1 seconds
         self.focus_time = 5.0                                   # 5 seconds
@@ -87,7 +87,7 @@ class VehicleController(Node):
         self.auto_landing_height = 10.0
 
         # vehicle status
-        self.vehicle_status_array = ['Manual', 'Altitude', 'Position', 'Mission', 'Loiter', 'PositionSlow', 'free5', 'free4', 'free3', 'Acro', 'free2', 'descend', 'Termination', 'Offboard', 'Stablized', 'free1', 'Takeoff', 'Land']
+        self.vehicle_status_array = ['Manual', 'Altitude', 'Position', 'Mission', 'Hold', 'RTL', 'PositionSlow', 'free5', 'free4', 'free3', 'Acro', 'free2', 'descend', 'Termination', 'Offboard', 'Stablized', 'free1', 'Takeoff', 'Land']
 
         """
         2. Logging setup
@@ -432,10 +432,10 @@ class VehicleController(Node):
             self.print(f"{self.auto}\t{self.pos_gps[0]:.6f}\t{self.pos_gps[1]:.6f}\t{-self.pos[2]:.6f}\t{self.utc_year}\t{self.utc_month}\t{self.utc_day}\t{self.utc_hour}\t{self.utc_min}\t{self.utc_sec}\t{self.utc_ms}\t{self.phase}")
 
     def show_to_monitor_callback(self):
-        image = np.zeros((180,800,3),np.uint8)
+        image = np.zeros((180,500,3),np.uint8)
         cv2.putText(image, f'Pos: [{round(self.pos[0],2)},{round(self.pos[1],2)},{round(self.pos[2],2)}]', (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        cv2.putText(image, f'Vel: [{round(self.vel[0],2)},{round(self.vel[1],2)},{round(self.vel[2],2)}]. {round(np.linalg.norm(self.vel))}', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        cv2.putText(image, f'state: {self.vehicle_status_array[self.vehicle_status.nav_state]})', (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(image, f'Vel: {round(np.linalg.norm(self.vel), 2)}. [{round(self.vel[0],2)},{round(self.vel[1],2)},{round(self.vel[2],2)}]', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(image, f'State: {self.vehicle_status_array[self.vehicle_status.nav_state]}', (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         if (self.phase == 8) and (self.subphase == 'avoiding obstacle'):
             if self.left_or_right > 0:
                 cv2.putText(image, f'Obstacle direction: right', (10, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
