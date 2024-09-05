@@ -82,13 +82,6 @@ class YoloDetector(Node):
         self.image_subscriber = self.create_subscription(Image, '/image_raw', self.image_callback, 10)
         self.apriltag_subscriber = self.create_subscription(TfMsg, 'tf', self.apriltag_callback, 10)
 
-        # for debugging
-        self.obstacle_subscriber = self.create_subscription(YoloObstacle, '/yolo_obstacle', self.obstacle_callback, qos_profile)
-
-        self.obstacle_speaker_detected = False
-        self.obstacle_speaker_x = 0
-        self.obstacle_speaker_y = 0
-        
 
         # create target_capture folder, which is used to save target images
         self.target_capture_folder = os.path.join(os.getcwd(), 'src/yolo_detection/config/target_capture')
@@ -113,7 +106,7 @@ class YoloDetector(Node):
         YOLOv5 Detection
         (only when phase is 8)
         """
-        if self.phase == '8' or self.phase == '7' or (self.phase == '2',self.phase == '3'):
+        if self.phase == '8' or self.phase == '7':
             # send frame to YOLOv5 model
             frame_resized = cv2.resize(frame, self.yolo_size)
             results = self.model(frame_resized)
@@ -139,13 +132,11 @@ class YoloDetector(Node):
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                             cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
                             # publish obstacle message when phase is 8. & big enough to avoid
-                            '''
                             obstacle_msg = YoloObstacle()
                             obstacle_msg.label = label
                             obstacle_msg.x = x_center
                             obstacle_msg.y = y_center
                             self.publisher_obstacle.publish(obstacle_msg)
-                            '''
                         else: # green
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                             cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
@@ -160,7 +151,7 @@ class YoloDetector(Node):
         """
         Save target image
         """
-        if (self.phase == '3') and False:
+        if (self.phase == '3'):
             current_time = time.time()
             if current_time - self.last_capture_time >= self.timer_period:
                 self.save_target_image(frame)
@@ -173,15 +164,7 @@ class YoloDetector(Node):
             cv2.circle(frame, (int(self.apriltag_x), int(self.apriltag_y)), 10, (0, 0, 0), -1)
             cv2.circle(frame, (int(self.apriltag_x), int(self.apriltag_y)), 8, (0, 0, 255), -1)
             self.apriltag_detected = False
-
-        """
-        Display obstacle speaker position
-        """
-        if self.obstacle_speaker_detected:
-            cv2.circle(frame, (int(self.obstacle_speaker_x), int(self.obstacle_speaker_y)), 10, (0, 0, 0), -1)
-            cv2.circle(frame, (int(self.obstacle_speaker_x), int(self.obstacle_speaker_y)), 8, (0, 255, 0), -1)
-            self.obstacle_speaker_detected = False
-
+            
 
         """
         Display Vehicle information to monitor
@@ -227,11 +210,6 @@ class YoloDetector(Node):
             self.apriltag_detected = True
         except:
             self.apriltag_detected = False
-
-    def obstacle_callback(self, msg):
-        self.obstacle_speaker_detected = True
-        self.obstacle_speaker_x = msg.x
-        self.obstacle_speaker_y = msg.y
 
 
 
