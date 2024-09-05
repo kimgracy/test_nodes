@@ -131,17 +131,16 @@ class YoloDetector(Node):
                         if (abs(y1-y2) >= self.y_threshold_big): # red
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                             cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+                            # publish obstacle message when phase is 8. & big enough to avoid
+                            if (self.phase == '8'):
+                                obstacle_msg = YoloObstacle()
+                                obstacle_msg.label = label
+                                obstacle_msg.x = x_center
+                                obstacle_msg.y = y_center
+                                self.publisher_obstacle.publish(obstacle_msg)
                         else: # green
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                             cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-                        
-                        # publish obstacle message when phase is 8
-                        #if (self.phase == '8'):
-                        obstacle_msg = YoloObstacle()
-                        obstacle_msg.label = label
-                        obstacle_msg.x = x_center
-                        obstacle_msg.y = y_center
-                        self.publisher_obstacle.publish(obstacle_msg)
 
 
         """

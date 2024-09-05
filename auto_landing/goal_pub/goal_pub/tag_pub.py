@@ -78,6 +78,8 @@ class TagPublisher(Node):
         self.roll = 0 
         self.pitch = 0
         self.yaw = 0
+        self.drone_q = [1.0,0.0,0.0,0.0]
+        self.drone_world = [0.0, 0.0, 0.0]
 
         log_dir = os.path.join(os.getcwd(), 'src/auto_landing/log')
         os.makedirs(log_dir, exist_ok=True)
@@ -99,10 +101,10 @@ class TagPublisher(Node):
             tag_pose = transform.translation
             tag_q = transform.rotation
             
-            rotation = quat2R(self.drone_q)
+            self.rotation = quat2R(self.drone_q)
 
             tag_body = np.array([-tag_pose.y, tag_pose.x, tag_pose.z])   #changed because 90degree rotation.
-            drone2tag_world = np.matmul(rotation,tag_body)
+            drone2tag_world = np.matmul(self.rotation,tag_body)
             tag_world = drone2tag_world+self.drone_world
             self.last_tag = tag_world
            
@@ -112,6 +114,7 @@ class TagPublisher(Node):
             self.tag_world_pub.publish(tag_world_msg)
 
             self.print(f"tag_world : {tag_world}    drone_world : {self.drone_world}    id : {frame_id}")
+
 
         except:
             print("apriltag not dtected")
