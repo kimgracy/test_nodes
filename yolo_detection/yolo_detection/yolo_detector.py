@@ -44,7 +44,7 @@ class YoloDetector(Node):
         self.subphase = 'yolo_only'
         # Variables for YOLOv5
         self.y_threshold_small = 80
-        self.y_threshold_big = 500
+        self.y_threshold_big = 550
         self.frame_size = (1280, 720)
         self.yolo_size = (640, 360)
 

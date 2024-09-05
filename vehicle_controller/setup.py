@@ -58,7 +58,9 @@ setup(
             'final_05 = test_nodes.final_05_offboard:main',
             'final_06 = test_nodes.final_06_offboard:main',
             'final_07 = test_nodes.final_07:main',
-            'final_taean = test_nodes.final_taean:main',
+            'final_08 = test_nodes.final_08_rotc:main',
+            'final_taean_obstacle_left = test_nodes.final_taean_obstacle_left:main',
+            'final_taean_obstacle_right = test_nodes.final_taean_obstacle_right:main',
         ],
     },
 )

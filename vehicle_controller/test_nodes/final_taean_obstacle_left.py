@@ -55,16 +55,20 @@ class VehicleController(Node):
         self.landing_height = 5.0                               # prepare auto landing at 5m
         self.corridor_radius = 2.0
 
+        # time period
+        self.time_period = 0.05                                  # 20 Hz
+
         # acceptance constants
         self.mc_acceptance_radius = 0.3
         self.nearby_acceptance_radius = 30
         self.offboard_acceptance_radius = 10.0                   # mission -> offboard acceptance radius
-        self.transition_acceptance_angle = 0.8                   
+        self.transition_acceptance_angle = 0.8                   # 0.8 rad = 45.98 deg
+        self.landing_acceptance_angle = 0.8                      # 0.8 rad = 45.98 deg
         self.heading_acceptance_angle = 0.1                      # 0.1 rad = 5.73 deg
 
         # bezier curve constants
         self.fast_vmax = 5.0
-        self.slow_vmax = 3.5
+        self.slow_vmax = 2.5
         self.very_slow_vmax = 0.2
         self.max_acceleration = 9.81 * np.tan(10 * np.pi / 180)  # 10 degree tilt angle
         self.mc_start_speed = 0.0001
@@ -88,6 +92,12 @@ class VehicleController(Node):
 
         # vehicle status
         self.vehicle_status_array = ['Manual', 'Altitude', 'Position', 'Mission', 'Hold', 'RTL', 'PositionSlow', 'free5', 'free4', 'free3', 'Acro', 'free2', 'descend', 'Termination', 'Offboard', 'Stablized', 'free1', 'Takeoff', 'Land']
+
+        # emergency detection
+        self.emergency_detecting_again = False
+        self.align_emergency_threshold = int(30 / self.time_period)
+        self.emergency_corridor_radius = 2.0
+        self.emergency_obstacle_direction = -1                  # right: 1, left: -1
 
         """
         2. Logging setup
@@ -181,7 +191,9 @@ class VehicleController(Node):
         self.gimbal_counter = 0
         if is_jetson():
             self.ser = serial.Serial('/dev/ttyGimbal', 115200)
-            self.received_packet = bytearray()
+
+        # emergency detection
+        self.emergency_time_checker = 0
 
         # UTC time
         self.utc_time = 0.0
@@ -230,20 +242,16 @@ class VehicleController(Node):
         self.start_yaw_publisher = self.create_publisher(
             Float32MultiArray, '/auto_land_home_info', 10
         )
-        self.gimbal_angle_publisher = self.create_publisher(
-            Float32MultiArray, '/gimbal_angle', 10
-        )
 
         """
         8. timer setup
         """
-        self.time_period = 0.05     # 20 Hz
         self.offboard_heartbeat = self.create_timer(self.time_period, self.offboard_heartbeat_callback)
         self.vehicle_phase_publisher_timer = self.create_timer(self.time_period, self.vehicle_phase_publisher_callback)
         self.gimbal_control_callback_timer = self.create_timer(self.time_period, self.gimbal_control_callback)
         self.log_timer = self.create_timer(self.time_period, self.log_timer_callback)
         self.main_timer = self.create_timer(self.time_period, self.main_timer_callback)
-        self.show_to_monitor_timer = self.create_timer(0.1, self.show_to_monitor_callback)
+        self.show_to_monitor_timer = self.create_timer(self.time_period, self.show_to_monitor_callback)
         
         print("Successfully executed: vehicle_controller")
         print("Start the mission\n")
@@ -364,58 +372,6 @@ class VehicleController(Node):
             data_crc = crc_xmodem(data_fix + data_var)
             packet = bytearray(data_fix + data_var + data_crc)
             self.ser.write(packet)
-            self.read_packet()
-
-    def read_packet(self):
-        st = time.time()
-
-        # Check if there is any data available to read
-        while self.ser.in_waiting > 0:
-            # Read one byte at a time
-            data = self.ser.read(1)
-            
-            if data:
-                # Append the received byte to the packet
-                self.received_packet.extend(data)
-
-                # Check if the packet starts with 0x55, 0x66 and is 16 bytes long
-                if len(self.received_packet) >= 16 and self.received_packet[0] == 0x55 and self.received_packet[1] == 0x66:
-                    # We have a complete packet of 16 bytes
-                    complete_packet = self.received_packet[:16]  # Extract the complete packet
-
-                    # Calculate the CRC for the first 14 bytes
-                    calculated_crc = crc_xmodem(complete_packet[:14])
-
-                    # Extract the received CRC from the 15th and 16th bytes
-                    received_crc = complete_packet[14:16]
-
-                    # Compare calculated CRC with received CRC
-                    if calculated_crc == received_crc:
-                        # Extract and read values from 9~10, 11~12, 13~14 bytes as int16_t in little-endian
-                        value1 = int.from_bytes(complete_packet[8:10],  'little', signed=True)/10
-                        value2 = int.from_bytes(complete_packet[10:12], 'little', signed=True)/10
-                        value3 = int.from_bytes(complete_packet[12:14], 'little', signed=True)/10
-                        
-                        # Publish the gimbal angle
-                        gimbal_angle = Float32MultiArray()
-                        gimbal_angle.data = [value1, value2, value3]
-                        self.gimbal_angle_publisher.publish(gimbal_angle)
-
-                        print(time.time() - st)
-                        # Clear the received_packet buffer
-                        self.received_packet = self.received_packet[16:]  # Remove the processed packet
-                        break
-
-                    else:
-                        print(f"CRC Check Failed: Calculated {format_bytearray(calculated_crc)}, Received {format_bytearray(received_crc)}")
-                        self.received_packet.clear()
-                        break
-                    
-                elif len(self.received_packet) > 16:
-                    # If the buffer grows beyond 16 bytes without matching conditions, reset it
-                    print("Incomplete or malformed packet, clearing buffer.")
-                    self.received_packet.clear()
-                    break
 
     # Logging
     # auto_states = {3, 4, 5, 14, 17, 18, 19, 20}
@@ -600,7 +556,6 @@ class VehicleController(Node):
                         )
                 
                 elif self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-                    self.gimbal_pitch = -15.0
                     self.goal_position = self.get_braking_position(self.pos, self.vel)
                     self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, np.linalg.norm(self.vel))
                     self.subphase = 'pause'
@@ -611,14 +566,16 @@ class VehicleController(Node):
                 self.run_bezier_curve(self.bezier_points)
                 if np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.gimbal_reboot()    # gimbal reboot for safety
+                    self.gimbal_pitch = -15.0
                     self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[7], self.WP[8])
                     self.goal_position = self.WP[7]
                     self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
+                    self.emergency_time_checker = 0
                     self.subphase = 'align to vertiport'
                     self.print('\n[subphase : pause -> align to vertiport]\n')
             
             elif self.subphase == 'align to vertiport':
-                self.run_bezier_curve(self.bezier_points, self.goal_yaw)           
+                self.run_bezier_curve(self.bezier_points, self.goal_yaw)
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     vertical_error = np.abs(self.pos[2] - self.WP[7][2])
                     horizontal_error = np.linalg.norm(self.pos[:2] - self.WP[7][:2])
@@ -632,6 +589,17 @@ class VehicleController(Node):
                     self.subphase = 'go slow'
                     self.print('\n[phase: 7 -> 8]')
                     self.print('[subphase : align to vertiport -> go slow]\n')
+                
+                else:
+                    # emergency detection
+                    self.emergency_time_checker += 1
+                    if self.emergency_time_checker >= self.align_emergency_threshold:
+                        self.print('Yaw alignment failed')
+                        self.emergency_time_checker = 0
+                        self.phase = 8
+                        self.subphase = 'emergency detected'
+                        self.print('\n[phase: 7 -> 8]')
+                        self.print('[subphase : align to vertiport -> emergency detected]\n')
 
         elif self.phase == 8:
             if self.subphase == 'go slow':
@@ -665,6 +633,7 @@ class VehicleController(Node):
                     direction = (self.WP[8] - self.WP[7]) / np.linalg.norm(self.WP[8] - self.WP[7])
                     self.goal_position = self.WP[7] + direction * np.dot(self.pos - self.WP[7], direction)
                     self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
+                    self.emergency_time_checker = 0
                     self.subphase = 'align'
                     self.print('\n[subphase : pause -> align]\n')
             
@@ -675,6 +644,15 @@ class VehicleController(Node):
                     self.ladder_count = 0
                     self.subphase = 'detecting obstacle'
                     self.print('\n[subphase : align -> detecting obstacle]\n')
+                
+                else:
+                    # emergency detection
+                    self.emergency_time_checker += 1
+                    if self.emergency_time_checker >= self.align_emergency_threshold:
+                        self.print('Yaw alignment failed')
+                        self.emergency_time_checker = 0
+                        self.subphase = 'emergency detected'
+                        self.print('[subphase : align to vertiport -> emergency detected]\n')
             
             elif self.subphase == 'detecting obstacle':
                 self.publish_trajectory_setpoint(position_sp=self.goal_position, yaw_sp=self.goal_yaw)
@@ -710,8 +688,6 @@ class VehicleController(Node):
                         self.ladder_count += 1
                         self.left_or_right += 1 if self.obstacle_x > (self.image_size[0] / 2) else -1
                         self.print(f'Detected obstacle : {self.ladder_count} times, ({self.obstacle_x}, {self.obstacle_y})')
-                    else:
-                        pass
 
             elif self.subphase == 'avoiding obstacle':
                 # go along with ractangle path. but if you find obstacle being in front of you  =>  'pause'.
@@ -732,7 +708,6 @@ class VehicleController(Node):
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.fast_vmax)
                 else:
                     self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                    k = np.sign(self.left_or_right)
                     if self.obstacle and self.yolo_wp_checker == 2 and np.sign(self.left_or_right) * (self.obstacle_x-(self.image_size[0]/2)) < self.critical_threshold:
                         self.obstacle = False
                         self.ladder_count += 1
@@ -742,13 +717,50 @@ class VehicleController(Node):
                             self.yolo_wp_checker = 1
                             self.goal_position = self.get_braking_position(self.pos, self.vel)
                             self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, np.linalg.norm(self.vel))
-                            self.subphase = 'pause'
-                            self.print('\n[subphase : avoiding obstacle -> pause]\n')
+                            if self.emergency_detecting_again:
+                                self.subphase = 'emergency detected'
+                                self.print('\n[subphase : avoiding obstacle -> emergency detected]\n')
+                            else:
+                                self.emergency_detecting_again = True
+                                self.subphase = 'pause'
+                                self.print('\n[subphase : avoiding obstacle -> pause]\n')
+
+            elif self.subphase == 'emergency detected':
+                self.goal_yaw = self.get_bearing_to_next_waypoint(self.WP[7], self.WP[8])
+                avoid_direction = np.array([np.cos(self.goal_yaw - np.sign(self.emergency_obstacle_direction) * np.pi/2), np.sin(self.goal_yaw - np.sign(self.emergency_obstacle_direction) * np.pi/2), 0.0])
+                self.yolo_WP[0] = self.pos
+                self.yolo_WP[1] = self.pos + self.emergency_corridor_radius * avoid_direction
+                self.yolo_WP[2] = self.WP[8] + self.emergency_corridor_radius * avoid_direction
+                self.yolo_WP[3] = self.WP[8]
+                self.ladder_count = 0
+                self.yolo_time_count = 0
+                self.goal_position = self.yolo_WP[self.yolo_wp_checker]
+                self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.very_slow_vmax)  # very slow (not to go out of the corridor)
+                self.subphase = 'avoiding obstacle'
+                self.print('\n[subphase : detecting obstacle -> avoiding obstacle]\n')
+                
+            elif self.subphase == 'emergency':
+                self.run_bezier_curve(self.bezier_points, self.goal_yaw)
+                if np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
+                    self.print(f"\nyolo wp{self.yolo_wp_checker} reached\n")
+                    if self.yolo_wp_checker == 3:
+                        self.yolo_wp_checker = 1
+                        self.goal_yaw = self.start_yaw
+                        self.goal_position = self.WP[9]
+                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.slow_vmax)
+                        self.phase = 9
+                        self.subphase = 'landing align'
+                        self.print('\n[phase : 8 -> 9]')
+                        self.print('[subphase : avoiding obstacle -> landing align]\n')
+                    else:
+                        self.yolo_wp_checker += 1
+                        self.goal_position = self.yolo_WP[self.yolo_wp_checker]
+                        self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.fast_vmax)
 
         elif self.phase == 9:
             if self.subphase == 'landing align':
                 self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
+                if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.landing_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
                     self.gimbal_reboot()    # gimbal reboot for safety
                     self.gimbal_pitch = -90.0
                     self.subphase = 'prepare landing'
