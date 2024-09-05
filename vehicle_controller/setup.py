@@ -24,8 +24,9 @@ setup(
     entry_points={
         'console_scripts': [
             'taean = test_nodes.taean_controller:main',
-            'obstacle_speaker = test_nodes.obstacle_speaker:main',
-            'obstacle_speaker_2 = test_nodes.obstacle_speaker_2:main',
+            'os1 = test_nodes.obstacle_speaker_01:main',
+            'os2 = test_nodes.obstacle_speaker_02:main',
+            'os3 = test_nodes.obstacle_speaker_03:main',
             'apriltag_speaker = test_nodes.apriltag_speaker:main',
             'gimbal_test = test_nodes.gimbal_test:main',
             'mc_test_00 = test_nodes.mc_test_00_arm:main',
