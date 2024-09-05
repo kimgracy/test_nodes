@@ -24,10 +24,7 @@ def generate_launch_description():
                 cmd=["ros2", "run", "px4_offboard", "bezier_control"], output="screen"
             ),
             ExecuteProcess(
-                cmd=["ros2", "run", "goal_pub", "filter_2"], output="screen"
-            ),
-            ExecuteProcess(
-                cmd=["ros2", "run", "goal_pub", "tag_pub"], output="screen"
+                cmd=["ros2", "run", "goal_pub", "tag_pub_2"], output="screen"
             ),
             ExecuteProcess(
                 cmd=[
