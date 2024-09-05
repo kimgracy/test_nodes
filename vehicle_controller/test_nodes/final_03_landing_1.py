@@ -76,7 +76,7 @@ class VehicleController(Node):
 
         # yolo constants
         self.image_size = np.array([1280, 720])
-        self.critical_section = 0.1                             # check the middle 20% of the image in the horizontal direction
+        self.critical_threshold = 15                            # 15 pixels
         self.yolo_hz = 10                                       # theoretically 30Hz, but 10Hz in practice
         self.quick_time = 1.0                                   # 1 seconds
         self.focus_time = 5.0                                   # 5 seconds
@@ -84,6 +84,9 @@ class VehicleController(Node):
         # auto landing constants
         self.gimbal_time = 5.0
         self.auto_landing_height = 10.0
+
+        # vehicle status
+        self.vehicle_status_array = ['Manual', 'Altitude', 'Position', 'Mission', 'Hold', 'RTL', 'PositionSlow', 'free5', 'free4', 'free3', 'Acro', 'free2', 'descend', 'Termination', 'Offboard', 'Stablized', 'free1', 'Takeoff', 'Land']
 
         """
         2. Logging setup
@@ -422,10 +425,10 @@ class VehicleController(Node):
                     break
 
     def show_to_monitor_callback(self):
-        image = np.zeros((180,800,3),np.uint8)
+        image = np.zeros((180,500,3),np.uint8)
         cv2.putText(image, f'Pos: [{round(self.pos[0],2)},{round(self.pos[1],2)},{round(self.pos[2],2)}]', (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        cv2.putText(image, f'Vel: [{round(self.vel[0],2)},{round(self.vel[1],2)},{round(self.vel[2],2)}]. {round(np.linalg.norm(self.vel))}', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        cv2.putText(image, f'state: {self.vehicle_status.nav_state}', (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(image, f'Vel: {round(np.linalg.norm(self.vel), 2)}. [{round(self.vel[0],2)},{round(self.vel[1],2)},{round(self.vel[2],2)}]', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(image, f'State: {self.vehicle_status_array[self.vehicle_status.nav_state]}', (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         if (self.phase == 8) and (self.subphase == 'avoiding obstacle'):
             if self.left_or_right > 0:
                 cv2.putText(image, f'Obstacle direction: right', (10, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
@@ -521,6 +524,7 @@ class VehicleController(Node):
             elif self.subphase == 'align':
                 self.run_bezier_curve(self.bezier_points, self.goal_yaw)
                 if np.abs((self.yaw - self.goal_yaw + np.pi) % (2 * np.pi) - np.pi) < self.heading_acceptance_angle and np.linalg.norm(self.pos - self.goal_position) < self.mc_acceptance_radius:
+                    self.left_or_right = 0
                     self.ladder_count = 0
                     self.subphase = 'detecting obstacle'
                     self.print('\n[subphase : align -> detecting obstacle]\n')
@@ -539,7 +543,6 @@ class VehicleController(Node):
                         self.yolo_WP[3] = self.WP[2]
                         self.ladder_count = 0
                         self.yolo_time_count = 0
-                        self.left_or_right = 0
                         self.goal_position = self.yolo_WP[self.yolo_wp_checker]
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.very_slow_vmax)  # very slow (not to go out of the corridor)
                         self.subphase = 'avoiding obstacle'
@@ -582,7 +585,7 @@ class VehicleController(Node):
                         self.bezier_points = self.generate_bezier_curve(self.pos, self.goal_position, self.fast_vmax)
                 else:
                     self.run_bezier_curve(self.bezier_points, self.goal_yaw)
-                    if self.obstacle and self.yolo_wp_checker == 2 and np.abs(self.obstacle_x - self.image_size[0] / 2) < self.critical_section * self.image_size[0]:
+                    if self.obstacle and self.yolo_wp_checker == 2 and np.sign(self.left_or_right) * (self.obstacle_x-(self.image_size[0]/2)) < self.critical_threshold:
                         self.obstacle = False
                         self.ladder_count += 1
                         self.print(f'Detected obstacle in critical section: {self.ladder_count} times')
