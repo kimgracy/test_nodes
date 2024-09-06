@@ -66,11 +66,11 @@ class YoloDetector(Node):
 
         # define model path and load the model
         if is_jetson():
-            model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small_50.pt')
+            model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_okj.engine')
             # model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small_50.pt')
         else:
             print('Not run on Nvidia Jetson. use best_small.pt')
-            model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_small_50.pt')            
+            model_path = os.path.join(os.getcwd(), 'src/yolo_detection/config/best_okj.pt')            
         self.model = torch.hub.load(os.path.expanduser('~/yolov5'), 'custom', path=model_path, source='local')
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
