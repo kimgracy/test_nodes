@@ -129,8 +129,8 @@ class YoloDetector(Node):
                         # draw bounding box and label
                         label = 'ladder'
                         if (abs(y1-y2) >= self.y_threshold_big): # red
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                            cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 7)
+                            #cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
                             # publish obstacle message when phase is 8. & big enough to avoid
                             obstacle_msg = YoloObstacle()
                             obstacle_msg.label = label
@@ -138,8 +138,8 @@ class YoloDetector(Node):
                             obstacle_msg.y = y_center
                             self.publisher_obstacle.publish(obstacle_msg)
                         else: # green
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                            cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 7)
+                            #cv2.putText(frame, f'{label} {row[4]:.2f}', (x1 + 5, y1 + 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
             else:
                 obstacle_msg = YoloObstacle()
                 obstacle_msg.label = 'no_ladder'
@@ -170,8 +170,8 @@ class YoloDetector(Node):
         Display Vehicle information to monitor
         """
         # add phase information to the frame in black color
-        cv2.putText(frame, f'Phase: {self.phase}', (10, 67), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
-        cv2.putText(frame, f'Subphase: {self.subphase}', (10, 130), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
+        cv2.putText(frame, f'Phase: {self.phase}', (10, 67), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 5)
+        cv2.putText(frame, f'Subphase: {self.subphase}', (10, 130), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 5)
 
 
         """
